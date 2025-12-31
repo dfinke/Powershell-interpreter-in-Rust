@@ -283,7 +283,7 @@ fn test_string_interpolation_simple() {
     let mut lexer = Lexer::new("\"Hello $name\"");
     let tokens = lexer.tokenize().unwrap();
     assert_eq!(tokens.len(), 2); // InterpolatedString + Eof
-    
+
     match &tokens[0].token {
         Token::InterpolatedString(parts) => {
             assert_eq!(parts.len(), 2);
@@ -298,7 +298,7 @@ fn test_string_interpolation_simple() {
 fn test_string_interpolation_multiple() {
     let mut lexer = Lexer::new("\"Hello $first $last!\"");
     let tokens = lexer.tokenize().unwrap();
-    
+
     match &tokens[0].token {
         Token::InterpolatedString(parts) => {
             assert_eq!(parts.len(), 5);
@@ -316,7 +316,7 @@ fn test_string_interpolation_multiple() {
 fn test_string_interpolation_at_start() {
     let mut lexer = Lexer::new("\"$name says hello\"");
     let tokens = lexer.tokenize().unwrap();
-    
+
     match &tokens[0].token {
         Token::InterpolatedString(parts) => {
             assert_eq!(parts.len(), 2);
@@ -331,7 +331,7 @@ fn test_string_interpolation_at_start() {
 fn test_string_interpolation_at_end() {
     let mut lexer = Lexer::new("\"Hello $name\"");
     let tokens = lexer.tokenize().unwrap();
-    
+
     match &tokens[0].token {
         Token::InterpolatedString(parts) => {
             assert_eq!(parts.len(), 2);

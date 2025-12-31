@@ -149,8 +149,11 @@ impl Lexer {
 
     /// Check if character sequence looks like a variable reference
     fn is_variable_start(&self) -> bool {
-        self.peek() == Some('$') && 
-        self.peek_ahead(1).map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false)
+        self.peek() == Some('$')
+            && self
+                .peek_ahead(1)
+                .map(|c| c.is_alphanumeric() || c == '_')
+                .unwrap_or(false)
     }
 
     /// Read a string literal
@@ -202,7 +205,7 @@ impl Lexer {
                     parts.push(StringPart::Literal(current_literal.clone()));
                     current_literal.clear();
                 }
-                
+
                 self.advance(); // consume $
                 let var_name = self.read_identifier();
                 parts.push(StringPart::Variable(var_name));
@@ -217,7 +220,9 @@ impl Lexer {
             }
         }
 
-        Err(LexError::UnterminatedString { position: start_pos })
+        Err(LexError::UnterminatedString {
+            position: start_pos,
+        })
     }
 
     /// Read a number literal
@@ -426,12 +431,18 @@ impl Lexer {
                         }
                         StringPart::Variable(_) => {
                             // Single variable in quotes - still interpolated
-                            Ok(LocatedToken::new(Token::InterpolatedString(parts), position))
+                            Ok(LocatedToken::new(
+                                Token::InterpolatedString(parts),
+                                position,
+                            ))
                         }
                     }
                 } else {
                     // Multiple parts - definitely interpolated
-                    Ok(LocatedToken::new(Token::InterpolatedString(parts), position))
+                    Ok(LocatedToken::new(
+                        Token::InterpolatedString(parts),
+                        position,
+                    ))
                 }
             }
             Some('\'') => {

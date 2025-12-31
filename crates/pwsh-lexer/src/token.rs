@@ -65,7 +65,9 @@ impl std::fmt::Display for Token {
             Token::InterpolatedString(parts) => {
                 write!(f, "InterpolatedString(")?;
                 for (i, part) in parts.iter().enumerate() {
-                    if i > 0 { write!(f, " + ")?; }
+                    if i > 0 {
+                        write!(f, " + ")?;
+                    }
                     match part {
                         StringPart::Literal(s) => write!(f, "\"{}\"", s)?,
                         StringPart::Variable(v) => write!(f, "${}", v)?,
