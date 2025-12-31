@@ -462,7 +462,13 @@ impl Parser {
                 let name_token = self.advance(); // consume identifier
                 let name = match &name_token.token {
                     Token::Identifier(n) => n.clone(),
-                    _ => unreachable!(),
+                    _ => {
+                        return Err(ParseError::UnexpectedToken {
+                            expected: "identifier after -".to_string(),
+                            found: name_token.token.clone(),
+                            position: name_token.position,
+                        })
+                    }
                 };
 
                 // Next token should be the value
@@ -552,11 +558,13 @@ impl Parser {
             self.current += 1;
             token
         } else {
-            // Return EOF if we're past the end
-            LocatedToken::new(
-                Token::Eof,
-                pwsh_lexer::Position::new(0, 0),
-            )
+            // Return EOF with the position of the last token
+            let position = if !self.tokens.is_empty() {
+                self.tokens[self.tokens.len() - 1].position
+            } else {
+                pwsh_lexer::Position::new(1, 1)
+            };
+            LocatedToken::new(Token::Eof, position)
         }
     }
 
