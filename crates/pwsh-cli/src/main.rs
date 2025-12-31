@@ -1,10 +1,14 @@
-use pwsh_lexer::{Lexer, Token};
+use pwsh_lexer::Lexer;
+use pwsh_parser::Parser;
+use pwsh_runtime::Evaluator;
 use std::io::{self, Write};
 
 fn main() {
-    println!("PowerShell Interpreter - Phase 0 REPL");
-    println!("This REPL tokenizes your input and displays the tokens.");
+    println!("PowerShell Interpreter - Phase 1 REPL");
+    println!("Now with Runtime & Evaluator!");
     println!("Type 'exit' to quit.\n");
+
+    let mut evaluator = Evaluator::new();
 
     loop {
         print!("PS> ");
@@ -26,23 +30,27 @@ fn main() {
             break;
         }
 
-        // Tokenize the input
+        // Lex, Parse, and Evaluate the input
         let mut lexer = Lexer::new(input);
         match lexer.tokenize() {
             Ok(tokens) => {
-                println!("Tokens:");
-                for (i, located_token) in tokens.iter().enumerate() {
-                    if located_token.token != Token::Eof {
-                        println!(
-                            "  [{}] {} (line: {}, col: {})",
-                            i,
-                            located_token.token,
-                            located_token.position.line,
-                            located_token.position.column
-                        );
+                let mut parser = Parser::new(tokens);
+                match parser.parse() {
+                    Ok(program) => match evaluator.eval(program) {
+                        Ok(value) => {
+                            // Only print non-null values
+                            if value != pwsh_runtime::Value::Null {
+                                println!("{}", value);
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Runtime error: {}\n", e);
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("Parse error: {}\n", e);
                     }
                 }
-                println!();
             }
             Err(e) => {
                 eprintln!("Lexer error: {}\n", e);

@@ -15,3 +15,4 @@ path = "src/lib.rs"
 pwsh-parser = { path = "../pwsh-parser" }
 
 [dev-dependencies]
+pwsh-lexer = { path = "../pwsh-lexer" }

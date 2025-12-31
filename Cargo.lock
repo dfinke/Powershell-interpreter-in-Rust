@@ -34,5 +34,6 @@ dependencies = [
 name = "pwsh-runtime"
 version = "0.1.0"
 dependencies = [
+ "pwsh-lexer",
  "pwsh-parser",
 ]
