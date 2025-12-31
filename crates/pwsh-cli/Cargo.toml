@@ -1,0 +1,19 @@
+[package]
+name = "pwsh-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "pwsh"
+path = "src/main.rs"
+
+[dependencies]
+pwsh-lexer = { path = "../pwsh-lexer" }
+pwsh-parser = { path = "../pwsh-parser" }
+pwsh-runtime = { path = "../pwsh-runtime" }
+pwsh-cmdlets = { path = "../pwsh-cmdlets" }
+
+[dev-dependencies]

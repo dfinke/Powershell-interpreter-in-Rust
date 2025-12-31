@@ -1,0 +1,15 @@
+[package]
+name = "pwsh-lexer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "pwsh_lexer"
+path = "src/lib.rs"
+
+[dependencies]
+
+[dev-dependencies]

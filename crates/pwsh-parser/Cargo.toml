@@ -1,0 +1,16 @@
+[package]
+name = "pwsh-parser"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "pwsh_parser"
+path = "src/lib.rs"
+
+[dependencies]
+pwsh-lexer = { path = "../pwsh-lexer" }
+
+[dev-dependencies]

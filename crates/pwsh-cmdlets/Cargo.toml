@@ -1,0 +1,16 @@
+[package]
+name = "pwsh-cmdlets"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "pwsh_cmdlets"
+path = "src/lib.rs"
+
+[dependencies]
+pwsh-runtime = { path = "../pwsh-runtime" }
+
+[dev-dependencies]
