@@ -1,4 +1,22 @@
-// Cmdlets module - to be implemented in Phase 1
-pub fn placeholder() {
-    println!("Cmdlets module placeholder");
+mod foreach_object;
+mod get_process;
+mod select_object;
+mod where_object;
+/// PowerShell built-in cmdlets
+mod write_output;
+
+// Re-export cmdlets
+pub use foreach_object::ForEachObjectCmdlet;
+pub use get_process::GetProcessCmdlet;
+pub use select_object::SelectObjectCmdlet;
+pub use where_object::WhereObjectCmdlet;
+pub use write_output::WriteOutputCmdlet;
+
+/// Register all built-in cmdlets
+pub fn register_all(registry: &mut pwsh_runtime::CmdletRegistry) {
+    registry.register(Box::new(WriteOutputCmdlet));
+    registry.register(Box::new(WhereObjectCmdlet));
+    registry.register(Box::new(SelectObjectCmdlet));
+    registry.register(Box::new(ForEachObjectCmdlet));
+    registry.register(Box::new(GetProcessCmdlet));
 }

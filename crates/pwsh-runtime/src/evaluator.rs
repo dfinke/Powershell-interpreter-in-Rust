@@ -1,4 +1,5 @@
 /// Evaluator for PowerShell AST
+use crate::cmdlet::CmdletRegistry;
 use crate::error::RuntimeError;
 use crate::scope::ScopeStack;
 use crate::value::Value;
@@ -12,6 +13,7 @@ pub type EvalResult = Result<Value, RuntimeError>;
 /// Evaluator executes PowerShell AST
 pub struct Evaluator {
     scope: ScopeStack,
+    cmdlet_registry: CmdletRegistry,
 }
 
 impl Evaluator {
@@ -19,7 +21,21 @@ impl Evaluator {
     pub fn new() -> Self {
         Evaluator {
             scope: ScopeStack::new(),
+            cmdlet_registry: CmdletRegistry::new(),
         }
+    }
+
+    /// Create evaluator with a custom cmdlet registry
+    pub fn with_registry(registry: CmdletRegistry) -> Self {
+        Evaluator {
+            scope: ScopeStack::new(),
+            cmdlet_registry: registry,
+        }
+    }
+
+    /// Get a mutable reference to the cmdlet registry
+    pub fn registry_mut(&mut self) -> &mut CmdletRegistry {
+        &mut self.cmdlet_registry
     }
 
     /// Evaluate a program (list of statements)
@@ -29,6 +45,16 @@ impl Evaluator {
             result = self.eval_statement(statement)?;
         }
         Ok(result)
+    }
+
+    /// Set a variable in the current scope
+    pub fn set_variable(&mut self, name: &str, value: Value) {
+        self.scope.set_variable(name, value);
+    }
+
+    /// Get a variable from the current scope
+    pub fn get_variable(&self, name: &str) -> Option<Value> {
+        self.scope.get_variable(name)
     }
 
     /// Evaluate a single statement
@@ -73,12 +99,111 @@ impl Evaluator {
                 Ok(Value::Null)
             }
 
-            Statement::Pipeline(_) => {
-                // Pipelines will be implemented in Week 6
-                // For now, return null
-                Ok(Value::Null)
+            Statement::Pipeline(pipeline) => {
+                // Execute the pipeline
+                let results = self.execute_pipeline(&pipeline)?;
+
+                // For display purposes, return the last value or Null
+                Ok(results.last().cloned().unwrap_or(Value::Null))
             }
         }
+    }
+
+    /// Execute a pipeline
+    fn execute_pipeline(
+        &mut self,
+        pipeline: &pwsh_parser::Pipeline,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        if pipeline.stages.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Start with empty pipeline input
+        let mut current_output: Vec<Value> = vec![];
+
+        // Execute each stage
+        for stage in pipeline.stages.iter() {
+            current_output = self.execute_pipeline_stage(stage, current_output)?;
+        }
+
+        Ok(current_output)
+    }
+
+    /// Execute a single pipeline stage
+    fn execute_pipeline_stage(
+        &mut self,
+        stage: &Expression,
+        input: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        match stage {
+            Expression::Call { name, arguments } => {
+                // This is a cmdlet call
+                self.execute_cmdlet_call(name, arguments, input)
+            }
+            _ => {
+                // For non-cmdlet expressions, evaluate them
+                // If there's pipeline input, bind it to $_ variable
+                if !input.is_empty() {
+                    let mut results = Vec::new();
+                    for item in input {
+                        // Set $_ to the current pipeline item
+                        self.set_variable("_", item.clone());
+                        let result = self.eval_expression(stage.clone())?;
+                        results.push(result);
+                    }
+                    Ok(results)
+                } else {
+                    // No pipeline input, just evaluate the expression
+                    let result = self.eval_expression(stage.clone())?;
+                    Ok(vec![result])
+                }
+            }
+        }
+    }
+
+    /// Execute a cmdlet call
+    fn execute_cmdlet_call(
+        &mut self,
+        name: &str,
+        arguments: &[pwsh_parser::Argument],
+        input: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        use crate::cmdlet::CmdletContext;
+
+        // First, check if cmdlet exists
+        if !self.cmdlet_registry.contains(name) {
+            return Err(RuntimeError::UndefinedFunction(name.to_string()));
+        }
+
+        // Build cmdlet context by evaluating arguments first
+        let mut context = CmdletContext::with_input(input);
+        let mut positional_args = Vec::new();
+
+        for arg in arguments {
+            match arg {
+                pwsh_parser::Argument::Positional(expr) => {
+                    let value = self.eval_expression(expr.clone())?;
+                    positional_args.push(value);
+                }
+                pwsh_parser::Argument::Named {
+                    name: param_name,
+                    value,
+                } => {
+                    let val = self.eval_expression(value.clone())?;
+                    context.parameters.insert(param_name.clone(), val);
+                }
+            }
+        }
+        context.arguments = positional_args;
+
+        // Now we can get the cmdlet and execute it
+        let cmdlet = self.cmdlet_registry.get(name).ok_or_else(|| {
+            // This should never happen as we checked earlier, but handle it gracefully
+            RuntimeError::UndefinedFunction(name.to_string())
+        })?;
+
+        // Execute the cmdlet
+        cmdlet.execute(context)
     }
 
     /// Evaluate a block of statements
@@ -99,10 +224,9 @@ impl Evaluator {
         match expr {
             Expression::Literal(lit) => self.eval_literal(lit),
 
-            Expression::Variable(name) => Ok(self
-                .scope
-                .get_variable(&name)
-                .unwrap_or(Value::Number(0.0))),
+            Expression::Variable(name) => {
+                Ok(self.scope.get_variable(&name).unwrap_or(Value::Number(0.0)))
+            }
 
             Expression::BinaryOp {
                 left,
@@ -126,13 +250,15 @@ impl Evaluator {
                 })
             }
 
-            Expression::Call { .. } => {
-                // Function calls will be implemented in Phase 2
-                Ok(Value::Null)
+            Expression::Call { name, arguments } => {
+                // This is a cmdlet call - execute it with empty pipeline input
+                let results = self.execute_cmdlet_call(&name, &arguments, vec![])?;
+                // Return the last value or Null
+                Ok(results.last().cloned().unwrap_or(Value::Null))
             }
 
             Expression::ScriptBlock(_) => {
-                // Script blocks will be implemented in Week 6
+                // Script blocks will be implemented later with full evaluation
                 Ok(Value::Null)
             }
         }
@@ -459,7 +585,7 @@ mod tests {
     fn test_eval_undefined_variable_in_expression() {
         let result = eval_str("$x = 6\n$r = $x + $y").unwrap();
         assert_eq!(result, Value::Null); // assignment returns null
-        // But to check $r, need to eval $r
+                                         // But to check $r, need to eval $r
         let result_r = eval_str("$x = 6\n$r = $x + $y\n$r").unwrap();
         assert_eq!(result_r, Value::Number(6.0));
     }

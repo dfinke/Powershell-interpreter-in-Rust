@@ -24,7 +24,13 @@ impl Value {
     fn display_string(&self) -> String {
         match self {
             Value::Null => String::new(),
-            Value::Boolean(b) => if *b { "True".to_string() } else { "False".to_string() },
+            Value::Boolean(b) => {
+                if *b {
+                    "True".to_string()
+                } else {
+                    "False".to_string()
+                }
+            }
             Value::Number(n) => {
                 // Format numbers nicely (avoid unnecessary decimals for whole numbers)
                 if n.fract() == 0.0 {

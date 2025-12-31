@@ -14,3 +14,5 @@ path = "src/lib.rs"
 pwsh-runtime = { path = "../pwsh-runtime" }
 
 [dev-dependencies]
+pwsh-lexer = { path = "../pwsh-lexer" }
+pwsh-parser = { path = "../pwsh-parser" }
