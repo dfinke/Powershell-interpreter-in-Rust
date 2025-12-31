@@ -4,9 +4,24 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 
 ## 🚀 Project Status
 
-**Current Phase**: Investigation & Planning  
-**Target MVP**: Week 6 (Object pipeline with 5 cmdlets)  
+**Current Phase**: Week 6 Complete - MVP Delivered! 🎉  
+**Latest Achievement**: Object pipeline with 5 working cmdlets  
 **Target 1.0**: Week 36 (Production-ready interpreter)
+
+### What Works Now (Week 6)
+- ✅ Complete lexer and parser
+- ✅ Runtime evaluation engine
+- ✅ Object-based pipeline execution
+- ✅ 5 core cmdlets (Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object)
+- ✅ Variables and expressions
+- ✅ String interpolation
+- ✅ Control flow (if/else)
+- ✅ Interactive REPL
+
+**Try it now:**
+```bash
+cargo run -p pwsh-cli
+```
 
 ## 📋 Overview
 
