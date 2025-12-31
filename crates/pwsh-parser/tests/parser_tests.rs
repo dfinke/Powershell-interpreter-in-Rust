@@ -42,7 +42,7 @@ fn test_parse_boolean_literal() {
 
     match &program.statements[0] {
         Statement::Expression(Expression::Literal(Literal::Boolean(b))) => {
-            assert_eq!(*b, true);
+            assert!(*b);
         }
         _ => panic!("Expected boolean literal"),
     }
@@ -108,10 +108,7 @@ fn test_parse_binary_multiplication() {
     let program = parse_str("10 * 2").unwrap();
 
     match &program.statements[0] {
-        Statement::Expression(Expression::BinaryOp {
-            operator,
-            ..
-        }) => {
+        Statement::Expression(Expression::BinaryOp { operator, .. }) => {
             assert_eq!(*operator, BinaryOperator::Multiply);
         }
         _ => panic!("Expected binary operation"),
@@ -123,10 +120,7 @@ fn test_parse_comparison_equal() {
     let program = parse_str("$x -eq 5").unwrap();
 
     match &program.statements[0] {
-        Statement::Expression(Expression::BinaryOp {
-            operator,
-            ..
-        }) => {
+        Statement::Expression(Expression::BinaryOp { operator, .. }) => {
             assert_eq!(*operator, BinaryOperator::Equal);
         }
         _ => panic!("Expected binary operation"),
@@ -138,10 +132,7 @@ fn test_parse_comparison_greater() {
     let program = parse_str("$x -gt 5").unwrap();
 
     match &program.statements[0] {
-        Statement::Expression(Expression::BinaryOp {
-            operator,
-            ..
-        }) => {
+        Statement::Expression(Expression::BinaryOp { operator, .. }) => {
             assert_eq!(*operator, BinaryOperator::Greater);
         }
         _ => panic!("Expected binary operation"),
@@ -169,10 +160,7 @@ fn test_parse_operator_precedence() {
 
             // Right should be 20 * 2
             match &**right {
-                Expression::BinaryOp {
-                    operator: op,
-                    ..
-                } => {
+                Expression::BinaryOp { operator: op, .. } => {
                     assert_eq!(*op, BinaryOperator::Multiply);
                 }
                 _ => panic!("Expected multiplication"),
@@ -196,10 +184,7 @@ fn test_parse_parenthesized_expression() {
 
             // Left should be (10 + 20)
             match &**left {
-                Expression::BinaryOp {
-                    operator: op,
-                    ..
-                } => {
+                Expression::BinaryOp { operator: op, .. } => {
                     assert_eq!(*op, BinaryOperator::Add);
                 }
                 _ => panic!("Expected addition"),
@@ -338,10 +323,7 @@ fn test_parse_if_else_statement() {
     let program = parse_str("if ($x -eq 5) { $y = 1 } else { $y = 2 }").unwrap();
 
     match &program.statements[0] {
-        Statement::If {
-            else_branch,
-            ..
-        } => {
+        Statement::If { else_branch, .. } => {
             assert!(else_branch.is_some());
         }
         _ => panic!("Expected if statement"),
@@ -554,9 +536,9 @@ fn test_parse_cmdlet_with_named_param() {
 
 #[test]
 fn test_parse_complex_pipeline() {
-    let program = parse_str(
-        "Get-Process | Where-Object { $_.CPU -gt 10 } | Select-Object Name, CPU"
-    ).unwrap();
+    let program =
+        parse_str("Get-Process | Where-Object { $_.CPU -gt 10 } | Select-Object Name, CPU")
+            .unwrap();
 
     match &program.statements[0] {
         Statement::Pipeline(pipeline) => {

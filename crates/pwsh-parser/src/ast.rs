@@ -1,5 +1,4 @@
 /// Abstract Syntax Tree definitions for PowerShell
-
 /// A complete PowerShell program
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -12,10 +11,7 @@ pub enum Statement {
     /// An expression statement
     Expression(Expression),
     /// Variable assignment: $x = value
-    Assignment {
-        variable: String,
-        value: Expression,
-    },
+    Assignment { variable: String, value: Expression },
     /// Function definition
     FunctionDef {
         name: String,

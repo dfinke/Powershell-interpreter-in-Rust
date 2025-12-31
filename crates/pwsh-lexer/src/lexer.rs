@@ -306,7 +306,7 @@ impl Lexer {
         let saved_position = self.position;
         let saved_line = self.line;
         let saved_column = self.column;
-        
+
         self.advance(); // consume '-'
 
         let op_name = self.read_identifier();

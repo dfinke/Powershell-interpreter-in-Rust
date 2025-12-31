@@ -194,14 +194,12 @@ impl Parser {
         self.consume(&Token::Return, "return")?;
 
         // Return can have an optional expression
-        let value = if self.check(&Token::Newline)
-            || self.check(&Token::Semicolon)
-            || self.is_at_end()
-        {
-            None
-        } else {
-            Some(self.parse_expression()?)
-        };
+        let value =
+            if self.check(&Token::Newline) || self.check(&Token::Semicolon) || self.is_at_end() {
+                None
+            } else {
+                Some(self.parse_expression()?)
+            };
 
         self.consume_statement_terminator();
         Ok(Statement::Return(value))
@@ -248,7 +246,10 @@ impl Parser {
     }
 
     /// Parse expression with precedence climbing (Pratt parser)
-    fn parse_expression_with_precedence(&mut self, min_precedence: u8) -> Result<Expression, ParseError> {
+    fn parse_expression_with_precedence(
+        &mut self,
+        min_precedence: u8,
+    ) -> Result<Expression, ParseError> {
         let mut left = self.parse_primary()?;
 
         loop {
@@ -474,7 +475,7 @@ impl Parser {
                 // Next token should be the value
                 let value = self.parse_primary()?;
                 arguments.push(Argument::Named { name, value });
-                
+
                 // Skip optional comma
                 if self.check(&Token::Comma) {
                     self.advance();
@@ -490,7 +491,7 @@ impl Parser {
             // Otherwise, parse as positional argument
             let arg = self.parse_primary()?;
             arguments.push(Argument::Positional(arg));
-            
+
             // Skip optional comma
             if self.check(&Token::Comma) {
                 self.advance();
