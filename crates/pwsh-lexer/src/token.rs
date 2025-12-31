@@ -3,6 +3,7 @@
 pub enum Token {
     // Literals
     String(String),
+    InterpolatedString(Vec<StringPart>), // "Hello $name" - will be expanded later
     Number(f64),
     Boolean(bool),
 
@@ -50,10 +51,28 @@ pub enum Token {
     Eof,
 }
 
+/// Parts of an interpolated string
+#[derive(Debug, Clone, PartialEq)]
+pub enum StringPart {
+    Literal(String),
+    Variable(String),
+}
+
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Token::String(s) => write!(f, "String(\"{}\")", s),
+            Token::InterpolatedString(parts) => {
+                write!(f, "InterpolatedString(")?;
+                for (i, part) in parts.iter().enumerate() {
+                    if i > 0 { write!(f, " + ")?; }
+                    match part {
+                        StringPart::Literal(s) => write!(f, "\"{}\"", s)?,
+                        StringPart::Variable(v) => write!(f, "${}", v)?,
+                    }
+                }
+                write!(f, ")")
+            }
             Token::Number(n) => write!(f, "Number({})", n),
             Token::Boolean(b) => write!(f, "Boolean({})", b),
             Token::Identifier(id) => write!(f, "Identifier({})", id),

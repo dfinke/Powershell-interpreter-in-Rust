@@ -1,4 +1,4 @@
-use pwsh_lexer::{LexError, Lexer, Token};
+use pwsh_lexer::{LexError, Lexer, StringPart, Token};
 
 #[test]
 fn test_tokenize_variable() {
@@ -276,4 +276,90 @@ fn test_comma_separator() {
     assert_eq!(tokens[2].token, Token::Variable("b".to_string()));
     assert_eq!(tokens[3].token, Token::Comma);
     assert_eq!(tokens[4].token, Token::Variable("c".to_string()));
+}
+
+#[test]
+fn test_string_interpolation_simple() {
+    let mut lexer = Lexer::new("\"Hello $name\"");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 2); // InterpolatedString + Eof
+    
+    match &tokens[0].token {
+        Token::InterpolatedString(parts) => {
+            assert_eq!(parts.len(), 2);
+            assert_eq!(parts[0], StringPart::Literal("Hello ".to_string()));
+            assert_eq!(parts[1], StringPart::Variable("name".to_string()));
+        }
+        _ => panic!("Expected InterpolatedString"),
+    }
+}
+
+#[test]
+fn test_string_interpolation_multiple() {
+    let mut lexer = Lexer::new("\"Hello $first $last!\"");
+    let tokens = lexer.tokenize().unwrap();
+    
+    match &tokens[0].token {
+        Token::InterpolatedString(parts) => {
+            assert_eq!(parts.len(), 5);
+            assert_eq!(parts[0], StringPart::Literal("Hello ".to_string()));
+            assert_eq!(parts[1], StringPart::Variable("first".to_string()));
+            assert_eq!(parts[2], StringPart::Literal(" ".to_string()));
+            assert_eq!(parts[3], StringPart::Variable("last".to_string()));
+            assert_eq!(parts[4], StringPart::Literal("!".to_string()));
+        }
+        _ => panic!("Expected InterpolatedString"),
+    }
+}
+
+#[test]
+fn test_string_interpolation_at_start() {
+    let mut lexer = Lexer::new("\"$name says hello\"");
+    let tokens = lexer.tokenize().unwrap();
+    
+    match &tokens[0].token {
+        Token::InterpolatedString(parts) => {
+            assert_eq!(parts.len(), 2);
+            assert_eq!(parts[0], StringPart::Variable("name".to_string()));
+            assert_eq!(parts[1], StringPart::Literal(" says hello".to_string()));
+        }
+        _ => panic!("Expected InterpolatedString"),
+    }
+}
+
+#[test]
+fn test_string_interpolation_at_end() {
+    let mut lexer = Lexer::new("\"Hello $name\"");
+    let tokens = lexer.tokenize().unwrap();
+    
+    match &tokens[0].token {
+        Token::InterpolatedString(parts) => {
+            assert_eq!(parts.len(), 2);
+            assert_eq!(parts[0], StringPart::Literal("Hello ".to_string()));
+            assert_eq!(parts[1], StringPart::Variable("name".to_string()));
+        }
+        _ => panic!("Expected InterpolatedString"),
+    }
+}
+
+#[test]
+fn test_string_no_interpolation_single_quotes() {
+    let mut lexer = Lexer::new("'Hello $name'");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens[0].token, Token::String("Hello $name".to_string()));
+}
+
+#[test]
+fn test_escaped_dollar_sign() {
+    let mut lexer = Lexer::new("\"Price: \\$100\"");
+    let tokens = lexer.tokenize().unwrap();
+    // Should be a simple string since $ is escaped
+    assert_eq!(tokens[0].token, Token::String("Price: $100".to_string()));
+}
+
+#[test]
+fn test_empty_interpolated_string() {
+    let mut lexer = Lexer::new("\"\"");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens[0].token, Token::String(String::new()));
 }

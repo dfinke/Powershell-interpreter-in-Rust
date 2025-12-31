@@ -1,4 +1,4 @@
-use crate::token::{LocatedToken, Position, Token};
+use crate::token::{LocatedToken, Position, StringPart, Token};
 
 /// Lexer errors
 #[derive(Debug, Clone, PartialEq)]
@@ -168,6 +168,58 @@ impl Lexer {
         Err(LexError::UnterminatedString {
             position: start_pos,
         })
+    }
+
+    /// Read an interpolated string (double-quoted with variables)
+    fn read_interpolated_string(&mut self) -> Result<Vec<StringPart>, LexError> {
+        let start_pos = self.current_position();
+        self.advance(); // consume opening quote
+
+        let mut parts = Vec::new();
+        let mut current_literal = String::new();
+
+        while let Some(ch) = self.peek() {
+            if ch == '"' {
+                // End of string
+                if !current_literal.is_empty() {
+                    parts.push(StringPart::Literal(current_literal));
+                }
+                self.advance(); // consume closing quote
+                return Ok(parts);
+            } else if ch == '$' && self.peek_ahead(1).map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false) {
+                // Variable interpolation
+                if !current_literal.is_empty() {
+                    parts.push(StringPart::Literal(current_literal.clone()));
+                    current_literal.clear();
+                }
+                
+                self.advance(); // consume $
+                let var_name = self.read_identifier();
+                parts.push(StringPart::Variable(var_name));
+            } else if ch == '\\' && self.peek_ahead(1).is_some() {
+                // Handle escape sequences
+                self.advance(); // consume backslash
+                if let Some(escaped) = self.advance() {
+                    match escaped {
+                        'n' => current_literal.push('\n'),
+                        'r' => current_literal.push('\r'),
+                        't' => current_literal.push('\t'),
+                        '\\' => current_literal.push('\\'),
+                        '"' => current_literal.push('"'),
+                        '$' => current_literal.push('$'), // Escaped dollar sign
+                        _ => {
+                            current_literal.push('\\');
+                            current_literal.push(escaped);
+                        }
+                    }
+                }
+            } else {
+                current_literal.push(ch);
+                self.advance();
+            }
+        }
+
+        Err(LexError::UnterminatedString { position: start_pos })
     }
 
     /// Read a number literal
@@ -363,8 +415,22 @@ impl Lexer {
                 }
             }
             Some('"') => {
-                let s = self.read_string('"')?;
-                Ok(LocatedToken::new(Token::String(s), position))
+                // Check if string contains variable interpolation
+                let parts = self.read_interpolated_string()?;
+                if parts.is_empty() {
+                    // Empty string
+                    Ok(LocatedToken::new(Token::String(String::new()), position))
+                } else if parts.len() == 1 && matches!(parts[0], StringPart::Literal(_)) {
+                    // Simple string without interpolation
+                    if let StringPart::Literal(s) = &parts[0] {
+                        Ok(LocatedToken::new(Token::String(s.clone()), position))
+                    } else {
+                        unreachable!()
+                    }
+                } else {
+                    // Interpolated string
+                    Ok(LocatedToken::new(Token::InterpolatedString(parts), position))
+                }
             }
             Some('\'') => {
                 let s = self.read_string('\'')?;
