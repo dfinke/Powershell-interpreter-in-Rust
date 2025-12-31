@@ -131,6 +131,28 @@ impl Lexer {
         }
     }
 
+    /// Process an escape sequence and return the resulting character(s)
+    fn process_escape(&mut self) -> Option<String> {
+        self.advance(); // consume backslash
+        self.advance().map(|escaped| match escaped {
+            'n' => "\n".to_string(),
+            'r' => "\r".to_string(),
+            't' => "\t".to_string(),
+            '\\' => "\\".to_string(),
+            '"' => "\"".to_string(),
+            '\'' => "'".to_string(),
+            '$' => "$".to_string(),
+            // Unknown escape sequences are kept as-is (PowerShell behavior)
+            _ => format!("\\{}", escaped),
+        })
+    }
+
+    /// Check if character sequence looks like a variable reference
+    fn is_variable_start(&self) -> bool {
+        self.peek() == Some('$') && 
+        self.peek_ahead(1).map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false)
+    }
+
     /// Read a string literal
     fn read_string(&mut self, quote: char) -> Result<String, LexError> {
         let start_pos = self.current_position();
@@ -144,20 +166,8 @@ impl Lexer {
                 return Ok(result);
             } else if ch == '\\' && self.peek_ahead(1).is_some() {
                 // Handle escape sequences
-                self.advance(); // consume backslash
-                if let Some(escaped) = self.advance() {
-                    match escaped {
-                        'n' => result.push('\n'),
-                        'r' => result.push('\r'),
-                        't' => result.push('\t'),
-                        '\\' => result.push('\\'),
-                        '"' => result.push('"'),
-                        '\'' => result.push('\''),
-                        _ => {
-                            result.push('\\');
-                            result.push(escaped);
-                        }
-                    }
+                if let Some(escaped_str) = self.process_escape() {
+                    result.push_str(&escaped_str);
                 }
             } else {
                 result.push(ch);
@@ -186,7 +196,7 @@ impl Lexer {
                 }
                 self.advance(); // consume closing quote
                 return Ok(parts);
-            } else if ch == '$' && self.peek_ahead(1).map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false) {
+            } else if self.is_variable_start() {
                 // Variable interpolation
                 if !current_literal.is_empty() {
                     parts.push(StringPart::Literal(current_literal.clone()));
@@ -198,20 +208,8 @@ impl Lexer {
                 parts.push(StringPart::Variable(var_name));
             } else if ch == '\\' && self.peek_ahead(1).is_some() {
                 // Handle escape sequences
-                self.advance(); // consume backslash
-                if let Some(escaped) = self.advance() {
-                    match escaped {
-                        'n' => current_literal.push('\n'),
-                        'r' => current_literal.push('\r'),
-                        't' => current_literal.push('\t'),
-                        '\\' => current_literal.push('\\'),
-                        '"' => current_literal.push('"'),
-                        '$' => current_literal.push('$'), // Escaped dollar sign
-                        _ => {
-                            current_literal.push('\\');
-                            current_literal.push(escaped);
-                        }
-                    }
+                if let Some(escaped_str) = self.process_escape() {
+                    current_literal.push_str(&escaped_str);
                 }
             } else {
                 current_literal.push(ch);
@@ -420,15 +418,19 @@ impl Lexer {
                 if parts.is_empty() {
                     // Empty string
                     Ok(LocatedToken::new(Token::String(String::new()), position))
-                } else if parts.len() == 1 && matches!(parts[0], StringPart::Literal(_)) {
-                    // Simple string without interpolation
-                    if let StringPart::Literal(s) = &parts[0] {
-                        Ok(LocatedToken::new(Token::String(s.clone()), position))
-                    } else {
-                        unreachable!()
+                } else if parts.len() == 1 {
+                    // Single part - could be literal or variable
+                    match &parts[0] {
+                        StringPart::Literal(s) => {
+                            Ok(LocatedToken::new(Token::String(s.clone()), position))
+                        }
+                        StringPart::Variable(_) => {
+                            // Single variable in quotes - still interpolated
+                            Ok(LocatedToken::new(Token::InterpolatedString(parts), position))
+                        }
                     }
                 } else {
-                    // Interpolated string
+                    // Multiple parts - definitely interpolated
                     Ok(LocatedToken::new(Token::InterpolatedString(parts), position))
                 }
             }
