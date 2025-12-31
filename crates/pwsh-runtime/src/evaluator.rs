@@ -38,8 +38,8 @@ impl Evaluator {
 
             Statement::Assignment { variable, value } => {
                 let val = self.eval_expression(value)?;
-                self.scope.set_variable(&variable, val.clone());
-                Ok(val)
+                self.scope.set_variable(&variable, val);
+                Ok(Value::Null)
             }
 
             Statement::If {
@@ -99,10 +99,10 @@ impl Evaluator {
         match expr {
             Expression::Literal(lit) => self.eval_literal(lit),
 
-            Expression::Variable(name) => self
+            Expression::Variable(name) => Ok(self
                 .scope
                 .get_variable(&name)
-                .ok_or(RuntimeError::UndefinedVariable(name)),
+                .unwrap_or(Value::Number(0.0))),
 
             Expression::BinaryOp {
                 left,
@@ -154,7 +154,7 @@ impl Evaluator {
                             let value = self
                                 .scope
                                 .get_variable(&name)
-                                .ok_or_else(|| RuntimeError::UndefinedVariable(name.clone()))?;
+                                .unwrap_or(Value::String("".to_string()));
                             result.push_str(&value.to_string());
                         }
                     }
@@ -429,7 +429,7 @@ mod tests {
     #[test]
     fn test_eval_assignment() {
         let result = eval_str("$x = 5").unwrap();
-        assert_eq!(result, Value::Number(5.0));
+        assert_eq!(result, Value::Null);
     }
 
     #[test]
@@ -451,8 +451,17 @@ mod tests {
 
     #[test]
     fn test_eval_undefined_variable() {
-        let result = eval_str("$undefined");
-        assert!(matches!(result, Err(RuntimeError::UndefinedVariable(_))));
+        let result = eval_str("$undefined").unwrap();
+        assert_eq!(result, Value::Number(0.0));
+    }
+
+    #[test]
+    fn test_eval_undefined_variable_in_expression() {
+        let result = eval_str("$x = 6\n$r = $x + $y").unwrap();
+        assert_eq!(result, Value::Null); // assignment returns null
+        // But to check $r, need to eval $r
+        let result_r = eval_str("$x = 6\n$r = $x + $y\n$r").unwrap();
+        assert_eq!(result_r, Value::Number(6.0));
     }
 
     #[test]
