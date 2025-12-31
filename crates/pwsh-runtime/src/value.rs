@@ -135,7 +135,9 @@ mod tests {
     #[test]
     fn test_object_properties() {
         let mut obj = Value::Object(HashMap::new());
-        assert!(obj.set_property("name", Value::String("test".to_string())).is_ok());
+        assert!(obj
+            .set_property("name", Value::String("test".to_string()))
+            .is_ok());
         assert_eq!(
             obj.get_property("name"),
             Some(Value::String("test".to_string()))

@@ -3,8 +3,7 @@ use crate::error::RuntimeError;
 use crate::scope::ScopeStack;
 use crate::value::Value;
 use pwsh_parser::{
-    BinaryOperator, Block, Expression, Literal, Program, Statement, StringPart,
-    UnaryOperator,
+    BinaryOperator, Block, Expression, Literal, Program, Statement, StringPart, UnaryOperator,
 };
 
 /// Result type for evaluation
@@ -36,13 +35,13 @@ impl Evaluator {
     pub fn eval_statement(&mut self, statement: Statement) -> EvalResult {
         match statement {
             Statement::Expression(expr) => self.eval_expression(expr),
-            
+
             Statement::Assignment { variable, value } => {
                 let val = self.eval_expression(value)?;
                 self.scope.set_variable(&variable, val.clone());
                 Ok(val)
             }
-            
+
             Statement::If {
                 condition,
                 then_branch,
@@ -57,7 +56,7 @@ impl Evaluator {
                     Ok(Value::Null)
                 }
             }
-            
+
             Statement::Return(expr) => {
                 // For now, we'll just evaluate and return the value
                 // In a full implementation, this would need special handling to break out of functions
@@ -67,13 +66,13 @@ impl Evaluator {
                     Ok(Value::Null)
                 }
             }
-            
+
             Statement::FunctionDef { .. } => {
                 // Function definitions will be implemented in Phase 2
                 // For now, just return null
                 Ok(Value::Null)
             }
-            
+
             Statement::Pipeline(_) => {
                 // Pipelines will be implemented in Week 6
                 // For now, return null
@@ -86,11 +85,11 @@ impl Evaluator {
     fn eval_block(&mut self, block: Block) -> EvalResult {
         self.scope.push_scope();
         let mut result = Value::Null;
-        
+
         for statement in block.statements {
             result = self.eval_statement(statement)?;
         }
-        
+
         self.scope.pop_scope();
         Ok(result)
     }
@@ -99,13 +98,12 @@ impl Evaluator {
     pub fn eval_expression(&mut self, expr: Expression) -> EvalResult {
         match expr {
             Expression::Literal(lit) => self.eval_literal(lit),
-            
-            Expression::Variable(name) => {
-                self.scope
-                    .get_variable(&name)
-                    .ok_or(RuntimeError::UndefinedVariable(name))
-            }
-            
+
+            Expression::Variable(name) => self
+                .scope
+                .get_variable(&name)
+                .ok_or(RuntimeError::UndefinedVariable(name)),
+
             Expression::BinaryOp {
                 left,
                 operator,
@@ -115,27 +113,24 @@ impl Evaluator {
                 let right_val = self.eval_expression(*right)?;
                 self.eval_binary_op(left_val, operator, right_val)
             }
-            
+
             Expression::UnaryOp { operator, operand } => {
                 let operand_val = self.eval_expression(*operand)?;
                 self.eval_unary_op(operator, operand_val)
             }
-            
+
             Expression::MemberAccess { object, member } => {
                 let obj_val = self.eval_expression(*object)?;
                 obj_val.get_property(&member).ok_or_else(|| {
-                    RuntimeError::InvalidPropertyAccess(format!(
-                        "Property '{}' not found",
-                        member
-                    ))
+                    RuntimeError::InvalidPropertyAccess(format!("Property '{}' not found", member))
                 })
             }
-            
+
             Expression::Call { .. } => {
                 // Function calls will be implemented in Phase 2
                 Ok(Value::Null)
             }
-            
+
             Expression::ScriptBlock(_) => {
                 // Script blocks will be implemented in Week 6
                 Ok(Value::Null)
@@ -170,82 +165,67 @@ impl Evaluator {
     }
 
     /// Evaluate a binary operation
-    fn eval_binary_op(
-        &self,
-        left: Value,
-        operator: BinaryOperator,
-        right: Value,
-    ) -> EvalResult {
+    fn eval_binary_op(&self, left: Value, operator: BinaryOperator, right: Value) -> EvalResult {
         match operator {
             // Arithmetic operators
-            BinaryOperator::Add => {
-                match (&left, &right) {
-                    (Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
-                    (Value::String(l), Value::String(r)) => {
-                        Ok(Value::String(format!("{}{}", l, r)))
-                    }
-                    (Value::String(l), r) => {
-                        Ok(Value::String(format!("{}{}", l, r)))
-                    }
-                    (l, Value::String(r)) => {
-                        Ok(Value::String(format!("{}{}", l, r)))
-                    }
-                    _ => Err(RuntimeError::TypeMismatch {
-                        expected: "number or string".to_string(),
-                        got: format!("{:?} and {:?}", left, right),
-                        operation: "addition".to_string(),
-                    }),
-                }
-            }
-            
+            BinaryOperator::Add => match (&left, &right) {
+                (Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
+                (Value::String(l), Value::String(r)) => Ok(Value::String(format!("{}{}", l, r))),
+                (Value::String(l), r) => Ok(Value::String(format!("{}{}", l, r))),
+                (l, Value::String(r)) => Ok(Value::String(format!("{}{}", l, r))),
+                _ => Err(RuntimeError::TypeMismatch {
+                    expected: "number or string".to_string(),
+                    got: format!("{:?} and {:?}", left, right),
+                    operation: "addition".to_string(),
+                }),
+            },
+
             BinaryOperator::Subtract => {
                 self.numeric_binary_op(left, right, "subtraction", |l, r| l - r)
             }
-            
+
             BinaryOperator::Multiply => {
                 self.numeric_binary_op(left, right, "multiplication", |l, r| l * r)
             }
-            
+
             BinaryOperator::Divide => {
                 let l = left.to_number().ok_or_else(|| RuntimeError::TypeMismatch {
                     expected: "number".to_string(),
                     got: format!("{:?}", left),
                     operation: "division".to_string(),
                 })?;
-                let r = right.to_number().ok_or_else(|| RuntimeError::TypeMismatch {
-                    expected: "number".to_string(),
-                    got: format!("{:?}", right),
-                    operation: "division".to_string(),
-                })?;
-                
+                let r = right
+                    .to_number()
+                    .ok_or_else(|| RuntimeError::TypeMismatch {
+                        expected: "number".to_string(),
+                        got: format!("{:?}", right),
+                        operation: "division".to_string(),
+                    })?;
+
                 if r == 0.0 {
                     return Err(RuntimeError::DivisionByZero);
                 }
-                
+
                 Ok(Value::Number(l / r))
             }
-            
-            BinaryOperator::Modulo => {
-                self.numeric_binary_op(left, right, "modulo", |l, r| l % r)
-            }
-            
+
+            BinaryOperator::Modulo => self.numeric_binary_op(left, right, "modulo", |l, r| l % r),
+
             // Comparison operators
             BinaryOperator::Equal => Ok(Value::Boolean(self.values_equal(&left, &right))),
-            
+
             BinaryOperator::NotEqual => Ok(Value::Boolean(!self.values_equal(&left, &right))),
-            
+
             BinaryOperator::Greater => {
                 self.comparison_op(left, right, "greater than", |l, r| l > r)
             }
-            
-            BinaryOperator::Less => {
-                self.comparison_op(left, right, "less than", |l, r| l < r)
-            }
-            
+
+            BinaryOperator::Less => self.comparison_op(left, right, "less than", |l, r| l < r),
+
             BinaryOperator::GreaterOrEqual => {
                 self.comparison_op(left, right, "greater or equal", |l, r| l >= r)
             }
-            
+
             BinaryOperator::LessOrEqual => {
                 self.comparison_op(left, right, "less or equal", |l, r| l <= r)
             }
@@ -253,13 +233,7 @@ impl Evaluator {
     }
 
     /// Helper for numeric binary operations
-    fn numeric_binary_op<F>(
-        &self,
-        left: Value,
-        right: Value,
-        op_name: &str,
-        f: F,
-    ) -> EvalResult
+    fn numeric_binary_op<F>(&self, left: Value, right: Value, op_name: &str, f: F) -> EvalResult
     where
         F: FnOnce(f64, f64) -> f64,
     {
@@ -268,23 +242,19 @@ impl Evaluator {
             got: format!("{:?}", left),
             operation: op_name.to_string(),
         })?;
-        let r = right.to_number().ok_or_else(|| RuntimeError::TypeMismatch {
-            expected: "number".to_string(),
-            got: format!("{:?}", right),
-            operation: op_name.to_string(),
-        })?;
-        
+        let r = right
+            .to_number()
+            .ok_or_else(|| RuntimeError::TypeMismatch {
+                expected: "number".to_string(),
+                got: format!("{:?}", right),
+                operation: op_name.to_string(),
+            })?;
+
         Ok(Value::Number(f(l, r)))
     }
 
     /// Helper for comparison operations
-    fn comparison_op<F>(
-        &self,
-        left: Value,
-        right: Value,
-        op_name: &str,
-        f: F,
-    ) -> EvalResult
+    fn comparison_op<F>(&self, left: Value, right: Value, op_name: &str, f: F) -> EvalResult
     where
         F: FnOnce(f64, f64) -> bool,
     {
@@ -293,12 +263,14 @@ impl Evaluator {
             got: format!("{:?}", left),
             operation: op_name.to_string(),
         })?;
-        let r = right.to_number().ok_or_else(|| RuntimeError::TypeMismatch {
-            expected: "number".to_string(),
-            got: format!("{:?}", right),
-            operation: op_name.to_string(),
-        })?;
-        
+        let r = right
+            .to_number()
+            .ok_or_else(|| RuntimeError::TypeMismatch {
+                expected: "number".to_string(),
+                got: format!("{:?}", right),
+                operation: op_name.to_string(),
+            })?;
+
         Ok(Value::Boolean(f(l, r)))
     }
 
@@ -317,11 +289,13 @@ impl Evaluator {
     fn eval_unary_op(&self, operator: UnaryOperator, operand: Value) -> EvalResult {
         match operator {
             UnaryOperator::Negate => {
-                let n = operand.to_number().ok_or_else(|| RuntimeError::TypeMismatch {
-                    expected: "number".to_string(),
-                    got: format!("{:?}", operand),
-                    operation: "negation".to_string(),
-                })?;
+                let n = operand
+                    .to_number()
+                    .ok_or_else(|| RuntimeError::TypeMismatch {
+                        expected: "number".to_string(),
+                        got: format!("{:?}", operand),
+                        operation: "negation".to_string(),
+                    })?;
                 Ok(Value::Number(-n))
             }
             UnaryOperator::Not => Ok(Value::Boolean(!operand.to_bool())),
@@ -426,7 +400,7 @@ mod tests {
     fn test_eval_comparison_equal() {
         let result = eval_str("5 -eq 5").unwrap();
         assert_eq!(result, Value::Boolean(true));
-        
+
         let result = eval_str("5 -eq 3").unwrap();
         assert_eq!(result, Value::Boolean(false));
     }
@@ -441,7 +415,7 @@ mod tests {
     fn test_eval_comparison_greater() {
         let result = eval_str("10 -gt 5").unwrap();
         assert_eq!(result, Value::Boolean(true));
-        
+
         let result = eval_str("3 -gt 5").unwrap();
         assert_eq!(result, Value::Boolean(false));
     }
@@ -478,10 +452,7 @@ mod tests {
     #[test]
     fn test_eval_undefined_variable() {
         let result = eval_str("$undefined");
-        assert!(matches!(
-            result,
-            Err(RuntimeError::UndefinedVariable(_))
-        ));
+        assert!(matches!(result, Err(RuntimeError::UndefinedVariable(_))));
     }
 
     #[test]

@@ -123,14 +123,14 @@ mod tests {
     #[test]
     fn test_scope_basic_operations() {
         let mut scope = Scope::new();
-        
+
         // Initially empty
         assert!(scope.get("x").is_none());
-        
+
         // Set and get
         scope.set("x", Value::Number(42.0));
         assert_eq!(scope.get("x"), Some(&Value::Number(42.0)));
-        
+
         // Update
         scope.set("x", Value::Number(100.0));
         assert_eq!(scope.get("x"), Some(&Value::Number(100.0)));
@@ -139,11 +139,11 @@ mod tests {
     #[test]
     fn test_scope_stack_single_scope() {
         let mut stack = ScopeStack::new();
-        
+
         // Set variable
         stack.set_variable("x", Value::Number(5.0));
         assert_eq!(stack.get_variable("x"), Some(Value::Number(5.0)));
-        
+
         // Update variable
         stack.set_variable("x", Value::Number(10.0));
         assert_eq!(stack.get_variable("x"), Some(Value::Number(10.0)));
@@ -152,30 +152,30 @@ mod tests {
     #[test]
     fn test_scope_stack_nested_scopes() {
         let mut stack = ScopeStack::new();
-        
+
         // Set in global scope
         stack.set_variable("x", Value::Number(1.0));
-        
+
         // Push new scope
         stack.push_scope();
-        
+
         // Can still see outer variable
         assert_eq!(stack.get_variable("x"), Some(Value::Number(1.0)));
-        
+
         // Set new variable in inner scope
         stack.set_variable("y", Value::Number(2.0));
         assert_eq!(stack.get_variable("y"), Some(Value::Number(2.0)));
-        
+
         // Update outer variable from inner scope
         stack.set_variable("x", Value::Number(10.0));
         assert_eq!(stack.get_variable("x"), Some(Value::Number(10.0)));
-        
+
         // Pop scope
         stack.pop_scope();
-        
+
         // Outer variable still updated
         assert_eq!(stack.get_variable("x"), Some(Value::Number(10.0)));
-        
+
         // Inner variable no longer accessible
         assert_eq!(stack.get_variable("y"), None);
     }
@@ -183,20 +183,20 @@ mod tests {
     #[test]
     fn test_scope_stack_shadowing() {
         let mut stack = ScopeStack::new();
-        
+
         // Set in global scope
         stack.set_variable("x", Value::Number(1.0));
-        
+
         // Push new scope
         stack.push_scope();
-        
+
         // Define same variable in inner scope (shadowing)
         stack.define_variable("x", Value::Number(2.0));
         assert_eq!(stack.get_variable("x"), Some(Value::Number(2.0)));
-        
+
         // Pop scope
         stack.pop_scope();
-        
+
         // Back to outer variable
         assert_eq!(stack.get_variable("x"), Some(Value::Number(1.0)));
     }
@@ -205,11 +205,11 @@ mod tests {
     fn test_scope_stack_cannot_pop_global() {
         let mut stack = ScopeStack::new();
         assert_eq!(stack.depth(), 1);
-        
+
         // Cannot pop global scope
         assert!(stack.pop_scope().is_none());
         assert_eq!(stack.depth(), 1);
-        
+
         // Can pop non-global scopes
         stack.push_scope();
         assert_eq!(stack.depth(), 2);

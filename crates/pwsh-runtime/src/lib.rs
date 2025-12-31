@@ -1,5 +1,5 @@
 /// PowerShell Runtime - Execution environment for PowerShell code
-/// 
+///
 /// This module provides the runtime evaluation engine for PowerShell,
 /// including value representation, scope management, and expression/statement evaluation.
 mod error;
