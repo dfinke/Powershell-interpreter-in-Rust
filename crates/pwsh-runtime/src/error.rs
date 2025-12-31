@@ -20,6 +20,8 @@ pub enum RuntimeError {
     ReturnOutsideFunction,
     /// Cannot access property on non-object
     InvalidPropertyAccess(String),
+    /// Cmdlet or function not found
+    UndefinedFunction(String),
 }
 
 impl fmt::Display for RuntimeError {
@@ -49,6 +51,9 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::InvalidPropertyAccess(msg) => {
                 write!(f, "Invalid property access: {msg}")
+            }
+            RuntimeError::UndefinedFunction(name) => {
+                write!(f, "The term '{name}' is not recognized as a cmdlet, function, or operable program")
             }
         }
     }
