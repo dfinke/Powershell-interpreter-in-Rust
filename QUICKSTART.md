@@ -182,6 +182,7 @@ impl Lexer {
             }
             '-' => {
                 self.advance();
+                // Check for -eq operator (dash followed by 'eq')
                 if self.peek_char() == Some('e') && self.peek_ahead(1) == Some('q') {
                     self.advance(); // consume 'e'
                     self.advance(); // consume 'q'

@@ -254,11 +254,11 @@ impl Value {
     pub fn set_property(&mut self, name: &str, value: Value);
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Object {
     type_name: String,
     properties: HashMap<String, Value>,
-    methods: HashMap<String, fn(&Object, Vec<Value>) -> Value>,
+    methods: HashMap<String, Box<dyn Fn(&Object, Vec<Value>) -> Value>>,
 }
 ```
 
