@@ -1,11 +1,10 @@
 [package]
 name = "pwsh-cmdlets"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-authors.workspace = true
-license.workspace = true
-repository.workspace = true
+version = "0.1.0"
+edition = "2021"
+authors = ["PowerShell Interpreter Team"]
+license = "MIT"
+repository = "https://github.com/dfinke/Powershell-interpreter-in-Rust"
 
 [lib]
 name = "pwsh_cmdlets"
