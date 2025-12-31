@@ -142,7 +142,7 @@ See [ROADMAP.md](ROADMAP.md) for detailed week-by-week plan.
 
 ### Prerequisites
 
-- Rust (latest stable)
+- Rust 1.64 or later (workspace inheritance support required)
 - Git
 - Code editor (VS Code + rust-analyzer recommended)
 
