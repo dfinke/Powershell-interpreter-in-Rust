@@ -13,9 +13,9 @@ impl Cmdlet for GetProcessCmdlet {
     fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
         // For Week 6 MVP, we'll create mock process data
         // In a production implementation, this would read from the OS
-        
+
         let mock_processes = create_mock_processes();
-        
+
         // Check if we have a -Name parameter to filter by name
         if let Some(name_value) = context.get_parameter("Name") {
             let filter_name = name_value.to_string().to_lowercase();
@@ -77,7 +77,7 @@ mod tests {
             .with_parameter("Name".to_string(), Value::String("chrome".to_string()));
         let result = cmdlet.execute(context).unwrap();
         assert_eq!(result.len(), 1);
-        
+
         if let Value::Object(props) = &result[0] {
             assert_eq!(
                 props.get("Name"),
@@ -93,7 +93,7 @@ mod tests {
         let cmdlet = GetProcessCmdlet;
         let context = CmdletContext::new();
         let result = cmdlet.execute(context).unwrap();
-        
+
         if let Value::Object(props) = &result[0] {
             assert!(props.contains_key("Name"));
             assert!(props.contains_key("Id"));

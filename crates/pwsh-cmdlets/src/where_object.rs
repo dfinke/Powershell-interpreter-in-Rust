@@ -12,13 +12,13 @@ impl Cmdlet for WhereObjectCmdlet {
     fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
         // For Week 6, we'll implement a simple property-based filter
         // Full script block support will come later
-        
+
         // Check if we have a -Property parameter (simple name match)
         if let Some(property_value) = context.get_parameter("Property") {
             // Filter objects that have this property set to a truthy value
             let property_name = property_value.to_string();
             let mut results = Vec::new();
-            
+
             for item in context.pipeline_input {
                 if let Some(prop_val) = item.get_property(&property_name) {
                     if prop_val.to_bool() {
@@ -52,29 +52,29 @@ mod tests {
     #[test]
     fn test_where_object_with_property_filter() {
         let cmdlet = WhereObjectCmdlet;
-        
+
         // Create objects with properties
         let mut obj1 = HashMap::new();
         obj1.insert("Active".to_string(), Value::Boolean(true));
         obj1.insert("Name".to_string(), Value::String("Object1".to_string()));
-        
+
         let mut obj2 = HashMap::new();
         obj2.insert("Active".to_string(), Value::Boolean(false));
         obj2.insert("Name".to_string(), Value::String("Object2".to_string()));
-        
+
         let mut obj3 = HashMap::new();
         obj3.insert("Active".to_string(), Value::Boolean(true));
         obj3.insert("Name".to_string(), Value::String("Object3".to_string()));
-        
+
         let input = vec![
             Value::Object(obj1.clone()),
             Value::Object(obj2),
             Value::Object(obj3.clone()),
         ];
-        
+
         let context = CmdletContext::with_input(input)
             .with_parameter("Property".to_string(), Value::String("Active".to_string()));
-        
+
         let result = cmdlet.execute(context).unwrap();
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], Value::Object(obj1));

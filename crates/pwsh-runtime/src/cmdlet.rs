@@ -1,6 +1,6 @@
+use crate::error::RuntimeError;
 /// Cmdlet trait and execution infrastructure
 use crate::value::Value;
-use crate::error::RuntimeError;
 use std::collections::HashMap;
 
 /// Context provided to cmdlets during execution
@@ -11,6 +11,12 @@ pub struct CmdletContext {
     pub parameters: HashMap<String, Value>,
     /// Positional arguments passed to the cmdlet
     pub arguments: Vec<Value>,
+}
+
+impl Default for CmdletContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CmdletContext {
@@ -85,8 +91,8 @@ impl CmdletRegistry {
     }
 
     /// Get a cmdlet by name (case-insensitive)
-    pub fn get(&self, name: &str) -> Option<&Box<dyn Cmdlet>> {
-        self.cmdlets.get(&name.to_lowercase())
+    pub fn get(&self, name: &str) -> Option<&dyn Cmdlet> {
+        self.cmdlets.get(&name.to_lowercase()).map(|b| &**b)
     }
 
     /// Check if a cmdlet is registered
@@ -137,11 +143,11 @@ mod tests {
     fn test_cmdlet_registry() {
         let mut registry = CmdletRegistry::new();
         registry.register(Box::new(TestCmdlet));
-        
+
         assert!(registry.contains("Test-Cmdlet"));
         assert!(registry.contains("test-cmdlet")); // Case-insensitive
         assert!(!registry.contains("NonExistent"));
-        
+
         let cmdlet = registry.get("test-cmdlet");
         assert!(cmdlet.is_some());
     }
@@ -151,7 +157,7 @@ mod tests {
         let cmdlet = TestCmdlet;
         let input = vec![Value::Number(42.0)];
         let ctx = CmdletContext::with_input(input.clone());
-        
+
         let result = cmdlet.execute(ctx).unwrap();
         assert_eq!(result, input);
     }

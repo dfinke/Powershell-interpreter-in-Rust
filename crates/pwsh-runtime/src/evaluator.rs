@@ -102,7 +102,7 @@ impl Evaluator {
             Statement::Pipeline(pipeline) => {
                 // Execute the pipeline
                 let results = self.execute_pipeline(&pipeline)?;
-                
+
                 // For display purposes, return the last value or Null
                 Ok(results.last().cloned().unwrap_or(Value::Null))
             }
@@ -110,7 +110,10 @@ impl Evaluator {
     }
 
     /// Execute a pipeline
-    fn execute_pipeline(&mut self, pipeline: &pwsh_parser::Pipeline) -> Result<Vec<Value>, RuntimeError> {
+    fn execute_pipeline(
+        &mut self,
+        pipeline: &pwsh_parser::Pipeline,
+    ) -> Result<Vec<Value>, RuntimeError> {
         if pipeline.stages.is_empty() {
             return Ok(vec![]);
         }
@@ -166,7 +169,7 @@ impl Evaluator {
         input: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
         use crate::cmdlet::CmdletContext;
-        
+
         // First, check if cmdlet exists
         if !self.cmdlet_registry.contains(name) {
             return Err(RuntimeError::UndefinedFunction(name.to_string()));
@@ -175,14 +178,17 @@ impl Evaluator {
         // Build cmdlet context by evaluating arguments first
         let mut context = CmdletContext::with_input(input);
         let mut positional_args = Vec::new();
-        
+
         for arg in arguments {
             match arg {
                 pwsh_parser::Argument::Positional(expr) => {
                     let value = self.eval_expression(expr.clone())?;
                     positional_args.push(value);
                 }
-                pwsh_parser::Argument::Named { name: param_name, value } => {
+                pwsh_parser::Argument::Named {
+                    name: param_name,
+                    value,
+                } => {
                     let val = self.eval_expression(value.clone())?;
                     context.parameters.insert(param_name.clone(), val);
                 }
@@ -191,13 +197,10 @@ impl Evaluator {
         context.arguments = positional_args;
 
         // Now we can get the cmdlet and execute it
-        let cmdlet = self
-            .cmdlet_registry
-            .get(name)
-            .ok_or_else(|| {
-                // This should never happen as we checked earlier, but handle it gracefully
-                RuntimeError::UndefinedFunction(name.to_string())
-            })?;
+        let cmdlet = self.cmdlet_registry.get(name).ok_or_else(|| {
+            // This should never happen as we checked earlier, but handle it gracefully
+            RuntimeError::UndefinedFunction(name.to_string())
+        })?;
 
         // Execute the cmdlet
         cmdlet.execute(context)
@@ -221,10 +224,9 @@ impl Evaluator {
         match expr {
             Expression::Literal(lit) => self.eval_literal(lit),
 
-            Expression::Variable(name) => Ok(self
-                .scope
-                .get_variable(&name)
-                .unwrap_or(Value::Number(0.0))),
+            Expression::Variable(name) => {
+                Ok(self.scope.get_variable(&name).unwrap_or(Value::Number(0.0)))
+            }
 
             Expression::BinaryOp {
                 left,
@@ -583,7 +585,7 @@ mod tests {
     fn test_eval_undefined_variable_in_expression() {
         let result = eval_str("$x = 6\n$r = $x + $y").unwrap();
         assert_eq!(result, Value::Null); // assignment returns null
-        // But to check $r, need to eval $r
+                                         // But to check $r, need to eval $r
         let result_r = eval_str("$x = 6\n$r = $x + $y\n$r").unwrap();
         assert_eq!(result_r, Value::Number(6.0));
     }

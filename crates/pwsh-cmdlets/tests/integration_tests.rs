@@ -1,5 +1,4 @@
 /// Integration tests for Week 6: Object Pipeline with 5 Cmdlets
-use pwsh_cmdlets;
 use pwsh_lexer::Lexer;
 use pwsh_parser::Parser;
 use pwsh_runtime::{Evaluator, Value};

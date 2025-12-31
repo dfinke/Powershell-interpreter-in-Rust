@@ -12,12 +12,12 @@ impl Cmdlet for ForEachObjectCmdlet {
     fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
         // For Week 6, we'll implement a simple property access version
         // Full script block support will come later when we integrate with evaluator
-        
+
         // Check if we have a -MemberName parameter (access a property)
         if let Some(member_value) = context.get_parameter("MemberName") {
             let member_name = member_value.to_string();
             let mut results = Vec::new();
-            
+
             for item in context.pipeline_input {
                 if let Some(prop_val) = item.get_property(&member_name) {
                     results.push(prop_val);

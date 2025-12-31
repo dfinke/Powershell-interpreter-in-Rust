@@ -26,17 +26,16 @@ impl Cmdlet for SelectObjectCmdlet {
             // Property can be a string (single property) or array (multiple properties)
             let properties = match property_value {
                 Value::String(s) => vec![s.clone()],
-                Value::Array(arr) => {
-                    arr.iter()
-                        .filter_map(|v| {
-                            if let Value::String(s) = v {
-                                Some(s.clone())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect()
-                }
+                Value::Array(arr) => arr
+                    .iter()
+                    .filter_map(|v| {
+                        if let Value::String(s) = v {
+                            Some(s.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
                 _ => vec![],
             };
 
@@ -101,10 +100,7 @@ mod tests {
 
         if let Value::Object(props) = &result[0] {
             assert_eq!(props.len(), 1);
-            assert_eq!(
-                props.get("Name"),
-                Some(&Value::String("Test".to_string()))
-            );
+            assert_eq!(props.get("Name"), Some(&Value::String("Test".to_string())));
         } else {
             panic!("Expected object result");
         }

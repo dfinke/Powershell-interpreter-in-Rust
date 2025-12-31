@@ -6,7 +6,9 @@ use std::io::{self, Write};
 fn main() {
     println!("PowerShell Interpreter - Week 6 MVP");
     println!("Object Pipeline with 5 Cmdlets!");
-    println!("Available cmdlets: Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object");
+    println!(
+        "Available cmdlets: Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object"
+    );
     println!("Type 'exit' to quit.\n");
 
     // Create evaluator and register all cmdlets
