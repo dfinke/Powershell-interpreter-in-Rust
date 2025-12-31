@@ -303,7 +303,10 @@ impl Lexer {
 
     /// Read operator starting with '-'
     fn read_operator(&mut self) -> Result<Token, LexError> {
-        let start_pos = self.current_position();
+        let saved_position = self.position;
+        let saved_line = self.line;
+        let saved_column = self.column;
+
         self.advance(); // consume '-'
 
         let op_name = self.read_identifier();
@@ -315,10 +318,15 @@ impl Lexer {
             "lt" => Ok(Token::Less),
             "ge" => Ok(Token::GreaterOrEqual),
             "le" => Ok(Token::LessOrEqual),
-            _ => Err(LexError::InvalidToken {
-                text: format!("-{}", op_name),
-                position: start_pos,
-            }),
+            _ => {
+                // Not a known operator, restore position and return Minus
+                // This allows -First, -Name, etc. to be parsed as minus + identifier
+                self.position = saved_position;
+                self.line = saved_line;
+                self.column = saved_column;
+                self.advance(); // consume just the minus
+                Ok(Token::Minus)
+            }
         }
     }
 

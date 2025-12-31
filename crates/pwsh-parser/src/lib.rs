@@ -1,4 +1,7 @@
-// Parser module - to be implemented in Phase 1
-pub fn placeholder() {
-    println!("Parser module placeholder");
-}
+pub mod ast;
+pub mod error;
+pub mod parser;
+
+pub use ast::*;
+pub use error::ParseError;
+pub use parser::Parser;
