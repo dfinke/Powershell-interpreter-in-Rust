@@ -30,13 +30,8 @@ impl<'a> PipelineExecutor<'a> {
         let mut current_output: Vec<Value> = vec![];
 
         // Execute each stage
-        for (index, stage) in pipeline.stages.iter().enumerate() {
+        for stage in pipeline.stages.iter() {
             current_output = self.execute_stage(stage, current_output, evaluator)?;
-
-            // For debugging: if this is the last stage and output is empty, return vec![Null]
-            if index == pipeline.stages.len() - 1 && current_output.is_empty() {
-                current_output = vec![Value::Null];
-            }
         }
 
         Ok(current_output)

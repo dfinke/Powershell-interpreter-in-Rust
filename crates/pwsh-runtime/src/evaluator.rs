@@ -119,13 +119,8 @@ impl Evaluator {
         let mut current_output: Vec<Value> = vec![];
 
         // Execute each stage
-        for (index, stage) in pipeline.stages.iter().enumerate() {
+        for stage in pipeline.stages.iter() {
             current_output = self.execute_pipeline_stage(stage, current_output)?;
-
-            // For debugging: if this is the last stage and output is empty, return vec![Null]
-            if index == pipeline.stages.len() - 1 && current_output.is_empty() {
-                current_output = vec![Value::Null];
-            }
         }
 
         Ok(current_output)
@@ -199,7 +194,10 @@ impl Evaluator {
         let cmdlet = self
             .cmdlet_registry
             .get(name)
-            .expect("Cmdlet should exist, we checked earlier");
+            .ok_or_else(|| {
+                // This should never happen as we checked earlier, but handle it gracefully
+                RuntimeError::UndefinedFunction(name.to_string())
+            })?;
 
         // Execute the cmdlet
         cmdlet.execute(context)
