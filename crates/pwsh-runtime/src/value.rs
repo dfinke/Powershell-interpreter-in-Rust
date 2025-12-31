@@ -24,7 +24,7 @@ impl Value {
     fn display_string(&self) -> String {
         match self {
             Value::Null => String::new(),
-            Value::Boolean(b) => b.to_string(),
+            Value::Boolean(b) => if *b { "True".to_string() } else { "False".to_string() },
             Value::Number(n) => {
                 // Format numbers nicely (avoid unnecessary decimals for whole numbers)
                 if n.fract() == 0.0 {
@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn test_value_to_string() {
         assert_eq!(Value::Null.to_string(), "");
-        assert_eq!(Value::Boolean(true).to_string(), "true");
+        assert_eq!(Value::Boolean(true).to_string(), "True");
         assert_eq!(Value::Number(42.0).to_string(), "42");
         assert_eq!(Value::Number(3.15).to_string(), "3.15");
         assert_eq!(Value::String("hello".to_string()).to_string(), "hello");
