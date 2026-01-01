@@ -393,6 +393,10 @@ impl Lexer {
                 self.advance();
                 Ok(LocatedToken::new(Token::Assignment, position))
             }
+            Some('@') => {
+                self.advance();
+                Ok(LocatedToken::new(Token::At, position))
+            }
             Some('+') => {
                 self.advance();
                 Ok(LocatedToken::new(Token::Plus, position))

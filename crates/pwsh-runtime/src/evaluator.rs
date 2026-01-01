@@ -387,6 +387,16 @@ impl Evaluator {
                     body: block.clone(),
                 }))
             }
+
+            Expression::Hashtable(pairs) => {
+                // Create a hashtable (Object with properties)
+                let mut map = std::collections::HashMap::new();
+                for (key, value_expr) in pairs {
+                    let value = self.eval_expression(value_expr.clone())?;
+                    map.insert(key.clone(), value);
+                }
+                Ok(Value::Object(map))
+            }
         }
     }
 
@@ -1141,5 +1151,92 @@ mod tests {
 
         // Verify we can create and assign script blocks
         assert!(matches!(result, Value::ScriptBlock(_)));
+    }
+
+    // Week 10: Hashtable tests
+    #[test]
+    fn test_empty_hashtable() {
+        let result = eval_str("@{}").unwrap();
+        match result {
+            Value::Object(map) => {
+                assert_eq!(map.len(), 0);
+            }
+            _ => panic!("Expected Object value"),
+        }
+    }
+
+    #[test]
+    fn test_hashtable_creation() {
+        let result = eval_str("@{Name=\"John\"; Age=30}").unwrap();
+        match result {
+            Value::Object(map) => {
+                assert_eq!(map.len(), 2);
+                assert_eq!(map.get("Name"), Some(&Value::String("John".to_string())));
+                assert_eq!(map.get("Age"), Some(&Value::Number(30.0)));
+            }
+            _ => panic!("Expected Object value"),
+        }
+    }
+
+    #[test]
+    fn test_hashtable_property_access() {
+        let result = eval_str(
+            r#"
+            $obj = @{Name="John"; Age=30}
+            $obj.Name
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::String("John".to_string()));
+    }
+
+    #[test]
+    fn test_hashtable_multiple_property_access() {
+        let mut evaluator = Evaluator::new();
+
+        // Create hashtable and access multiple properties
+        eval_str_with_evaluator(
+            &mut evaluator,
+            r#"
+            $person = @{Name="Alice"; Age=25; City="NYC"}
+            "#,
+        )
+        .unwrap();
+
+        let name = eval_str_with_evaluator(&mut evaluator, "$person.Name").unwrap();
+        assert_eq!(name, Value::String("Alice".to_string()));
+
+        let age = eval_str_with_evaluator(&mut evaluator, "$person.Age").unwrap();
+        assert_eq!(age, Value::Number(25.0));
+
+        let city = eval_str_with_evaluator(&mut evaluator, "$person.City").unwrap();
+        assert_eq!(city, Value::String("NYC".to_string()));
+    }
+
+    #[test]
+    fn test_week10_success_criteria() {
+        // Week 10 Success Criteria from ROADMAP.md:
+        // $obj = @{Name="John"; Age=30}
+        // $obj.Name  # "John"
+        // $obj.Age   # 30
+
+        let mut evaluator = Evaluator::new();
+
+        eval_str_with_evaluator(&mut evaluator, r#"$obj = @{Name="John"; Age=30}"#).unwrap();
+
+        let name = eval_str_with_evaluator(&mut evaluator, "$obj.Name").unwrap();
+        assert_eq!(name, Value::String("John".to_string()));
+
+        let age = eval_str_with_evaluator(&mut evaluator, "$obj.Age").unwrap();
+        assert_eq!(age, Value::Number(30.0));
+    }
+
+    // Helper function for tests that need to maintain state
+    fn eval_str_with_evaluator(evaluator: &mut Evaluator, input: &str) -> Result<Value, String> {
+        let mut lexer = Lexer::new(input);
+        let tokens = lexer.tokenize().map_err(|e| e.to_string())?;
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().map_err(|e| e.to_string())?;
+        evaluator.eval(program).map_err(|e| e.to_string())
     }
 }

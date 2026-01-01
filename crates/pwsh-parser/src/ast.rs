@@ -73,6 +73,8 @@ pub enum Expression {
     },
     /// Script block: { statements }
     ScriptBlock(Block),
+    /// Hashtable: @{key1=value1; key2=value2}
+    Hashtable(Vec<(String, Expression)>),
 }
 
 /// Literal values

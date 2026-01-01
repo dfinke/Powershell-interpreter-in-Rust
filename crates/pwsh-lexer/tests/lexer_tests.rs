@@ -411,3 +411,52 @@ fn test_tokenize_scope_qualified_in_expression() {
     assert_eq!(tokens[1].token, Token::Plus);
     assert_eq!(tokens[2].token, Token::Variable("local:y".to_string()));
 }
+
+// Week 10: Hashtable tests
+#[test]
+fn test_tokenize_at_symbol() {
+    let mut lexer = Lexer::new("@");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 2); // At + Eof
+    assert_eq!(tokens[0].token, Token::At);
+    assert_eq!(tokens[1].token, Token::Eof);
+}
+
+#[test]
+fn test_tokenize_empty_hashtable() {
+    let mut lexer = Lexer::new("@{}");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 4); // @, {, }, Eof
+    assert_eq!(tokens[0].token, Token::At);
+    assert_eq!(tokens[1].token, Token::LeftBrace);
+    assert_eq!(tokens[2].token, Token::RightBrace);
+    assert_eq!(tokens[3].token, Token::Eof);
+}
+
+#[test]
+fn test_tokenize_hashtable_simple() {
+    let mut lexer = Lexer::new("@{Name=\"John\"}");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens[0].token, Token::At);
+    assert_eq!(tokens[1].token, Token::LeftBrace);
+    assert_eq!(tokens[2].token, Token::Identifier("Name".to_string()));
+    assert_eq!(tokens[3].token, Token::Assignment);
+    assert_eq!(tokens[4].token, Token::String("John".to_string()));
+    assert_eq!(tokens[5].token, Token::RightBrace);
+}
+
+#[test]
+fn test_tokenize_hashtable_multiple_pairs() {
+    let mut lexer = Lexer::new("@{Name=\"John\"; Age=30}");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens[0].token, Token::At);
+    assert_eq!(tokens[1].token, Token::LeftBrace);
+    assert_eq!(tokens[2].token, Token::Identifier("Name".to_string()));
+    assert_eq!(tokens[3].token, Token::Assignment);
+    assert_eq!(tokens[4].token, Token::String("John".to_string()));
+    assert_eq!(tokens[5].token, Token::Semicolon);
+    assert_eq!(tokens[6].token, Token::Identifier("Age".to_string()));
+    assert_eq!(tokens[7].token, Token::Assignment);
+    assert_eq!(tokens[8].token, Token::Number(30.0));
+    assert_eq!(tokens[9].token, Token::RightBrace);
+}

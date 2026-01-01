@@ -564,3 +564,75 @@ fn test_parse_nested_blocks() {
         _ => panic!("Expected if statement"),
     }
 }
+
+// Week 10: Hashtable parsing tests
+#[test]
+fn test_parse_empty_hashtable() {
+    let program = parse_str("@{}").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Expression(Expression::Hashtable(pairs)) => {
+            assert_eq!(pairs.len(), 0);
+        }
+        _ => panic!("Expected hashtable expression"),
+    }
+}
+
+#[test]
+fn test_parse_hashtable_single_pair() {
+    let program = parse_str("@{Name=\"John\"}").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Expression(Expression::Hashtable(pairs)) => {
+            assert_eq!(pairs.len(), 1);
+            assert_eq!(pairs[0].0, "Name");
+            match &pairs[0].1 {
+                Expression::Literal(Literal::String(s)) => assert_eq!(s, "John"),
+                _ => panic!("Expected string literal"),
+            }
+        }
+        _ => panic!("Expected hashtable expression"),
+    }
+}
+
+#[test]
+fn test_parse_hashtable_multiple_pairs() {
+    let program = parse_str("@{Name=\"John\"; Age=30}").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Expression(Expression::Hashtable(pairs)) => {
+            assert_eq!(pairs.len(), 2);
+            assert_eq!(pairs[0].0, "Name");
+            assert_eq!(pairs[1].0, "Age");
+            match &pairs[1].1 {
+                Expression::Literal(Literal::Number(n)) => assert_eq!(*n, 30.0),
+                _ => panic!("Expected number literal"),
+            }
+        }
+        _ => panic!("Expected hashtable expression"),
+    }
+}
+
+#[test]
+fn test_parse_hashtable_assignment() {
+    let program = parse_str("$obj = @{X=5; Y=10}").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Assignment { variable, value } => {
+            assert_eq!(variable, "obj");
+            match value {
+                Expression::Hashtable(pairs) => {
+                    assert_eq!(pairs.len(), 2);
+                    assert_eq!(pairs[0].0, "X");
+                    assert_eq!(pairs[1].0, "Y");
+                }
+                _ => panic!("Expected hashtable expression"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}

@@ -4,11 +4,11 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 
 ## 🚀 Project Status
 
-**Current Phase**: Week 9 Complete - Script Blocks! 🎉  
-**Latest Achievement**: Script blocks as first-class values with full pipeline integration  
+**Current Phase**: Week 10 Complete - Object System! 🎉  
+**Latest Achievement**: Hashtable creation and property access  
 **Target 1.0**: Week 36 (Production-ready interpreter)
 
-### What Works Now (Week 9)
+### What Works Now (Week 10)
 - ✅ Complete lexer and parser
 - ✅ Runtime evaluation engine
 - ✅ Object-based pipeline execution
@@ -22,9 +22,11 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ Scope qualifiers ($global:, $local:, $script:)
 - ✅ Advanced scope management
 - ✅ Closures (basic)
-- ✅ **Script blocks as first-class values**
-- ✅ **Pipeline integration with $_**
-- ✅ **Script block execution**
+- ✅ Script blocks as first-class values
+- ✅ Pipeline integration with $_
+- ✅ Script block execution
+- ✅ **Hashtable creation (@{key=value})**
+- ✅ **Property access ($obj.Property)**
 - ✅ Interactive REPL
 
 **Try it now:**
@@ -121,6 +123,11 @@ powershell-interpreter/
 
 **MVP Demo Script:**
 ```powershell
+# Demonstrate object system (Week 10)
+$person = @{Name="John"; Age=30; City="NYC"}
+$person.Name   # John
+$person.Age    # 30
+
 # Demonstrate script blocks (Week 9)
 $filter = { $_ -gt 5 }
 1 | { $_ + 5 }        # Output: 6
@@ -173,6 +180,7 @@ $selected | ForEach-Object { Write-Output "$($_.Name): $($_.CPU)" }
 
 ### Phase 3: Object Pipeline (Weeks 10-14)
 - Object system, core cmdlets, full pipeline
+- **Week 10 Complete** ✅
 
 ### Phase 4: Built-in Cmdlets (Weeks 15-20)
 - File system, object manipulation, utility cmdlets
@@ -304,6 +312,14 @@ We welcome contributions! See our contribution guidelines:
 - [x] 89 total tests passing
 - [x] 8 new tests added
 - [x] 100% test coverage for script block features
+
+### Week 10 Success - ✅ ACHIEVED
+- [x] Hashtable creation syntax (@{key=value})
+- [x] Property access working ($obj.Property)
+- [x] Object system foundations
+- [x] 94 total tests passing
+- [x] 13 new tests added
+- [x] 100% test coverage for object features
 
 ### Beta Success (Week 26)
 - [ ] 30+ cmdlets

@@ -430,6 +430,15 @@ impl Parser {
                 })
             }
 
+            // Hashtable: @{key=value; ...}
+            Token::At => {
+                self.advance(); // consume @
+                self.consume(&Token::LeftBrace, "{")?;
+                let pairs = self.parse_hashtable_pairs()?;
+                self.consume(&Token::RightBrace, "}")?;
+                Ok(Expression::Hashtable(pairs))
+            }
+
             _ => {
                 let tok = self.advance();
                 Err(ParseError::InvalidExpression {
@@ -502,6 +511,56 @@ impl Parser {
         }
 
         Ok(arguments)
+    }
+
+    /// Parse hashtable key-value pairs: key1=value1; key2=value2
+    fn parse_hashtable_pairs(&mut self) -> Result<Vec<(String, Expression)>, ParseError> {
+        let mut pairs = Vec::new();
+
+        // Skip leading newlines/semicolons
+        while self.check(&Token::Newline) || self.check(&Token::Semicolon) {
+            self.advance();
+        }
+
+        // Empty hashtable @{}
+        if self.check(&Token::RightBrace) {
+            return Ok(pairs);
+        }
+
+        loop {
+            // Parse key (must be an identifier)
+            let key_token = self.advance();
+            let key = match &key_token.token {
+                Token::Identifier(name) => name.clone(),
+                _ => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "identifier (hashtable key)".to_string(),
+                        found: key_token.token.clone(),
+                        position: key_token.position,
+                    })
+                }
+            };
+
+            // Expect =
+            self.consume(&Token::Assignment, "=")?;
+
+            // Parse value
+            let value = self.parse_expression()?;
+
+            pairs.push((key, value));
+
+            // Skip optional semicolons and newlines
+            while self.check(&Token::Semicolon) || self.check(&Token::Newline) {
+                self.advance();
+            }
+
+            // Check if we're done
+            if self.check(&Token::RightBrace) || self.is_at_end() {
+                break;
+            }
+        }
+
+        Ok(pairs)
     }
 
     // Helper methods
