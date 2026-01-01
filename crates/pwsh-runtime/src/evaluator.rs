@@ -149,6 +149,24 @@ impl Evaluator {
                 // This is a cmdlet call
                 self.execute_cmdlet_call(name, arguments, input)
             }
+            Expression::ScriptBlock(block) => {
+                // Script block in pipeline - execute it for each input item
+                if !input.is_empty() {
+                    let mut results = Vec::new();
+                    let script_block = crate::value::ScriptBlock {
+                        body: block.clone(),
+                    };
+                    for item in input {
+                        let result = self.execute_script_block(&script_block, item)?;
+                        results.push(result);
+                    }
+                    Ok(results)
+                } else {
+                    // No pipeline input, just return the script block as a value
+                    let result = self.eval_expression(stage.clone())?;
+                    Ok(vec![result])
+                }
+            }
             _ => {
                 // For non-cmdlet expressions, evaluate them
                 // If there's pipeline input, bind it to $_ variable

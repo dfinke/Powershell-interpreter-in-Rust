@@ -49,6 +49,24 @@ impl<'a> PipelineExecutor<'a> {
                 // This is a cmdlet call
                 self.execute_cmdlet(name, arguments, input, evaluator)
             }
+            Expression::ScriptBlock(block) => {
+                // Script block in pipeline - execute it for each input item
+                if !input.is_empty() {
+                    let mut results = Vec::new();
+                    let script_block = crate::value::ScriptBlock {
+                        body: block.clone(),
+                    };
+                    for item in input {
+                        let result = evaluator.execute_script_block(&script_block, item)?;
+                        results.push(result);
+                    }
+                    Ok(results)
+                } else {
+                    // No pipeline input, just return the script block as a value
+                    let result = evaluator.eval_expression(stage.clone())?;
+                    Ok(vec![result])
+                }
+            }
             _ => {
                 // For non-cmdlet expressions, evaluate them
                 // If there's pipeline input, bind it to $_ variable
@@ -201,5 +219,61 @@ mod tests {
 
         let result = executor.execute(&pipeline, &mut evaluator).unwrap();
         assert_eq!(result, vec![Value::Number(10.0)]);
+    }
+
+    #[test]
+    fn test_pipeline_with_script_block() {
+        let registry = CmdletRegistry::new();
+        let executor = PipelineExecutor::new(&registry);
+        let mut evaluator = Evaluator::new();
+
+        // Create pipeline: 5 | { $_ + 10 }
+        // First stage produces 5, second stage is a script block that adds 10
+        let pipeline = Pipeline {
+            stages: vec![
+                Expression::Literal(pwsh_parser::Literal::Number(5.0)),
+                Expression::ScriptBlock(pwsh_parser::Block {
+                    statements: vec![pwsh_parser::Statement::Expression(
+                        Expression::BinaryOp {
+                            left: Box::new(Expression::Variable("_".to_string())),
+                            operator: pwsh_parser::BinaryOperator::Add,
+                            right: Box::new(Expression::Literal(pwsh_parser::Literal::Number(
+                                10.0,
+                            ))),
+                        },
+                    )],
+                }),
+            ],
+        };
+
+        let result = executor.execute(&pipeline, &mut evaluator).unwrap();
+        assert_eq!(result, vec![Value::Number(15.0)]);
+    }
+
+    #[test]
+    fn test_pipeline_script_block_with_multiple_inputs() {
+        let registry = CmdletRegistry::new();
+        let executor = PipelineExecutor::new(&registry);
+        let mut evaluator = Evaluator::new();
+
+        // Create a pipeline where first stage returns multiple values
+        use pwsh_parser::Literal;
+        let pipeline = Pipeline {
+            stages: vec![
+                Expression::Literal(Literal::Number(1.0)),
+                Expression::ScriptBlock(pwsh_parser::Block {
+                    statements: vec![pwsh_parser::Statement::Expression(
+                        Expression::BinaryOp {
+                            left: Box::new(Expression::Variable("_".to_string())),
+                            operator: pwsh_parser::BinaryOperator::Multiply,
+                            right: Box::new(Expression::Literal(Literal::Number(2.0))),
+                        },
+                    )],
+                }),
+            ],
+        };
+
+        let result = executor.execute(&pipeline, &mut evaluator).unwrap();
+        assert_eq!(result, vec![Value::Number(2.0)]);
     }
 }
