@@ -31,7 +31,7 @@ impl Scope {
         if let Some(value) = self.variables.get(name) {
             return Some(value);
         }
-        
+
         // Fall back to case-insensitive search
         self.find_key_case_insensitive(name)
             .and_then(|key| self.variables.get(key))
@@ -44,7 +44,7 @@ impl Scope {
             self.variables.insert(name.to_string(), value);
             return;
         }
-        
+
         // Check for case-insensitive match
         if let Some(existing_key) = self.find_key_case_insensitive(name).cloned() {
             // Update with the existing key's case
@@ -61,7 +61,7 @@ impl Scope {
         if self.variables.contains_key(name) {
             return true;
         }
-        
+
         // Fall back to case-insensitive search
         self.find_key_case_insensitive(name).is_some()
     }
