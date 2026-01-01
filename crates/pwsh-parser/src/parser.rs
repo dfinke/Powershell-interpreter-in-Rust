@@ -430,13 +430,31 @@ impl Parser {
                 })
             }
 
-            // Hashtable: @{key=value; ...}
+            // Hashtable: @{key=value; ...} or Array: @(item1, item2, ...)
             Token::At => {
                 self.advance(); // consume @
-                self.consume(&Token::LeftBrace, "{")?;
-                let pairs = self.parse_hashtable_pairs()?;
-                self.consume(&Token::RightBrace, "}")?;
-                Ok(Expression::Hashtable(pairs))
+                
+                // Check if it's a hashtable or array
+                if self.check(&Token::LeftBrace) {
+                    // Hashtable: @{key=value; ...}
+                    self.advance(); // consume {
+                    let pairs = self.parse_hashtable_pairs()?;
+                    self.consume(&Token::RightBrace, "}")?;
+                    Ok(Expression::Hashtable(pairs))
+                } else if self.check(&Token::LeftParen) {
+                    // Array: @(item1, item2, ...)
+                    self.advance(); // consume (
+                    let items = self.parse_array_items()?;
+                    self.consume(&Token::RightParen, ")")?;
+                    Ok(Expression::Array(items))
+                } else {
+                    let tok = self.peek().unwrap();
+                    Err(ParseError::UnexpectedToken {
+                        expected: "{ or (".to_string(),
+                        found: tok.clone(),
+                        position: self.tokens[self.current].position,
+                    })
+                }
             }
 
             _ => {
@@ -561,6 +579,39 @@ impl Parser {
         }
 
         Ok(pairs)
+    }
+
+    /// Parse array items: item1, item2, item3, ...
+    fn parse_array_items(&mut self) -> Result<Vec<Expression>, ParseError> {
+        let mut items = Vec::new();
+
+        // Skip leading newlines/commas
+        while self.check(&Token::Newline) || self.check(&Token::Comma) {
+            self.advance();
+        }
+
+        // Empty array @()
+        if self.check(&Token::RightParen) {
+            return Ok(items);
+        }
+
+        loop {
+            // Parse an expression
+            let expr = self.parse_expression()?;
+            items.push(expr);
+
+            // Skip optional commas and newlines
+            while self.check(&Token::Comma) || self.check(&Token::Newline) {
+                self.advance();
+            }
+
+            // Check if we're done
+            if self.check(&Token::RightParen) || self.is_at_end() {
+                break;
+            }
+        }
+
+        Ok(items)
     }
 
     // Helper methods

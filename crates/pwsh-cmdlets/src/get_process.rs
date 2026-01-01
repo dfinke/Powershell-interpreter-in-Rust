@@ -10,7 +10,11 @@ impl Cmdlet for GetProcessCmdlet {
         "Get-Process"
     }
 
-    fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
+    fn execute(
+        &self,
+        context: CmdletContext,
+        _evaluator: &mut pwsh_runtime::Evaluator,
+    ) -> Result<Vec<Value>, RuntimeError> {
         // For Week 6 MVP, we'll create mock process data
         // In a production implementation, this would read from the OS
 
@@ -66,7 +70,8 @@ mod tests {
     fn test_get_process_all() {
         let cmdlet = GetProcessCmdlet;
         let context = CmdletContext::new();
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 5);
     }
 
@@ -75,7 +80,8 @@ mod tests {
         let cmdlet = GetProcessCmdlet;
         let context = CmdletContext::new()
             .with_parameter("Name".to_string(), Value::String("chrome".to_string()));
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 1);
 
         if let Value::Object(props) = &result[0] {
@@ -92,7 +98,8 @@ mod tests {
     fn test_get_process_properties() {
         let cmdlet = GetProcessCmdlet;
         let context = CmdletContext::new();
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
 
         if let Value::Object(props) = &result[0] {
             assert!(props.contains_key("Name"));

@@ -9,10 +9,30 @@ impl Cmdlet for WhereObjectCmdlet {
         "Where-Object"
     }
 
-    fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
-        // For Week 6, we'll implement a simple property-based filter
-        // Full script block support will come later
-
+    fn execute(
+        &self,
+        context: CmdletContext,
+        evaluator: &mut pwsh_runtime::Evaluator,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        // Check if we have a script block as the first positional argument
+        if let Some(first_arg) = context.arguments.first() {
+            if let Value::ScriptBlock(script_block) = first_arg {
+                // Filter using script block
+                let mut results = Vec::new();
+                
+                for item in context.pipeline_input {
+                    // Execute the script block with $_ set to the current item
+                    let result = evaluator.execute_script_block(script_block, item.clone())?;
+                    
+                    // If the result is truthy, include the item
+                    if result.to_bool() {
+                        results.push(item);
+                    }
+                }
+                return Ok(results);
+            }
+        }
+        
         // Check if we have a -Property parameter (simple name match)
         if let Some(property_value) = context.get_parameter("Property") {
             // Filter objects that have this property set to a truthy value
@@ -30,7 +50,6 @@ impl Cmdlet for WhereObjectCmdlet {
         }
 
         // For now, if no parameters, just pass through
-        // In the future, we'll evaluate script blocks here
         Ok(context.pipeline_input)
     }
 }
@@ -45,7 +64,8 @@ mod tests {
         let cmdlet = WhereObjectCmdlet;
         let input = vec![Value::Number(1.0), Value::Number(2.0), Value::Number(3.0)];
         let context = CmdletContext::with_input(input.clone());
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, input);
     }
 
@@ -75,7 +95,8 @@ mod tests {
         let context = CmdletContext::with_input(input)
             .with_parameter("Property".to_string(), Value::String("Active".to_string()));
 
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], Value::Object(obj1));
         assert_eq!(result[1], Value::Object(obj3));

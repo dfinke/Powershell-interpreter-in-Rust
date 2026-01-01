@@ -9,15 +9,37 @@ impl Cmdlet for WriteOutputCmdlet {
         "Write-Output"
     }
 
-    fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
+    fn execute(
+        &self,
+        context: CmdletContext,
+        _evaluator: &mut pwsh_runtime::Evaluator,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        let mut output = Vec::new();
+        
         // If there's pipeline input, output it
         if !context.pipeline_input.is_empty() {
-            return Ok(context.pipeline_input);
+            for value in context.pipeline_input {
+                // Unroll arrays to the pipeline
+                if let Value::Array(items) = value {
+                    output.extend(items);
+                } else {
+                    output.push(value);
+                }
+            }
+            return Ok(output);
         }
 
         // Otherwise, output the arguments
         if !context.arguments.is_empty() {
-            return Ok(context.arguments);
+            for value in context.arguments {
+                // Unroll arrays to the pipeline
+                if let Value::Array(items) = value {
+                    output.extend(items);
+                } else {
+                    output.push(value);
+                }
+            }
+            return Ok(output);
         }
 
         // If no input and no arguments, output nothing
@@ -33,7 +55,8 @@ mod tests {
     fn test_write_output_with_argument() {
         let cmdlet = WriteOutputCmdlet;
         let context = CmdletContext::new().with_arguments(vec![Value::Number(42.0)]);
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, vec![Value::Number(42.0)]);
     }
 
@@ -42,7 +65,8 @@ mod tests {
         let cmdlet = WriteOutputCmdlet;
         let input = vec![Value::String("Hello".to_string())];
         let context = CmdletContext::with_input(input.clone());
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, input);
     }
 
@@ -51,7 +75,8 @@ mod tests {
         let cmdlet = WriteOutputCmdlet;
         let values = vec![Value::Number(1.0), Value::Number(2.0), Value::Number(3.0)];
         let context = CmdletContext::new().with_arguments(values.clone());
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, values);
     }
 }

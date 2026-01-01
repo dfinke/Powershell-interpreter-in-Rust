@@ -68,7 +68,12 @@ pub trait Cmdlet: Send + Sync {
 
     /// Execute the cmdlet with the given context
     /// Returns a Vec of output values (for pipeline)
-    fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError>;
+    /// The evaluator parameter allows cmdlets to execute script blocks
+    fn execute(
+        &self,
+        context: CmdletContext,
+        evaluator: &mut crate::evaluator::Evaluator,
+    ) -> Result<Vec<Value>, RuntimeError>;
 }
 
 /// Registry for managing cmdlets
@@ -119,7 +124,11 @@ mod tests {
             "Test-Cmdlet"
         }
 
-        fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
+        fn execute(
+            &self,
+            context: CmdletContext,
+            _evaluator: &mut crate::evaluator::Evaluator,
+        ) -> Result<Vec<Value>, RuntimeError> {
             Ok(context.pipeline_input)
         }
     }
@@ -157,8 +166,9 @@ mod tests {
         let cmdlet = TestCmdlet;
         let input = vec![Value::Number(42.0)];
         let ctx = CmdletContext::with_input(input.clone());
+        let mut evaluator = crate::evaluator::Evaluator::new();
 
-        let result = cmdlet.execute(ctx).unwrap();
+        let result = cmdlet.execute(ctx, &mut evaluator).unwrap();
         assert_eq!(result, input);
     }
 }

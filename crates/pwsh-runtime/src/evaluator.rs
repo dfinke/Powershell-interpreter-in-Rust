@@ -112,8 +112,12 @@ impl Evaluator {
                 // Execute the pipeline
                 let results = self.execute_pipeline(&pipeline)?;
 
-                // For display purposes, return the last value or Null
-                Ok(results.last().cloned().unwrap_or(Value::Null))
+                // Return all results as an array if multiple, or single value if one, or null if none
+                match results.len() {
+                    0 => Ok(Value::Null),
+                    1 => Ok(results[0].clone()),
+                    _ => Ok(Value::Array(results)),
+                }
             }
         }
     }
@@ -182,7 +186,13 @@ impl Evaluator {
                 } else {
                     // No pipeline input, just evaluate the expression
                     let result = self.eval_expression(stage.clone())?;
-                    Ok(vec![result])
+                    
+                    // If the result is an array, unroll it to the pipeline
+                    if let Value::Array(items) = result {
+                        Ok(items)
+                    } else {
+                        Ok(vec![result])
+                    }
                 }
             }
         }
@@ -231,14 +241,20 @@ impl Evaluator {
         }
         context.arguments = positional_args;
 
-        // Now we can get the cmdlet and execute it
+        // Create a raw pointer to self to work around borrow checker
+        // SAFETY: We ensure that the cmdlet execution doesn't invalidate the registry reference
+        // The cmdlet will only mutate the scope/state, not the registry itself
+        let self_ptr = self as *mut Evaluator;
         let cmdlet = self.cmdlet_registry.get(name).ok_or_else(|| {
-            // This should never happen as we checked earlier, but handle it gracefully
             RuntimeError::UndefinedFunction(name.to_string())
         })?;
 
         // Execute the cmdlet
-        cmdlet.execute(context)
+        // SAFETY: The cmdlet reference and the mutable self reference don't overlap in memory
+        // as cmdlet points into the registry and the mutable operations affect scope/state
+        unsafe {
+            cmdlet.execute(context, &mut *self_ptr)
+        }
     }
 
     /// Call a user-defined function
@@ -396,6 +412,16 @@ impl Evaluator {
                     map.insert(key.clone(), value);
                 }
                 Ok(Value::Object(map))
+            }
+
+            Expression::Array(items) => {
+                // Create an array
+                let mut values = Vec::new();
+                for item_expr in items {
+                    let value = self.eval_expression(item_expr.clone())?;
+                    values.push(value);
+                }
+                Ok(Value::Array(values))
             }
         }
     }
