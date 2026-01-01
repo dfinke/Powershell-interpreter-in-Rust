@@ -233,15 +233,11 @@ mod tests {
             stages: vec![
                 Expression::Literal(pwsh_parser::Literal::Number(5.0)),
                 Expression::ScriptBlock(pwsh_parser::Block {
-                    statements: vec![pwsh_parser::Statement::Expression(
-                        Expression::BinaryOp {
-                            left: Box::new(Expression::Variable("_".to_string())),
-                            operator: pwsh_parser::BinaryOperator::Add,
-                            right: Box::new(Expression::Literal(pwsh_parser::Literal::Number(
-                                10.0,
-                            ))),
-                        },
-                    )],
+                    statements: vec![pwsh_parser::Statement::Expression(Expression::BinaryOp {
+                        left: Box::new(Expression::Variable("_".to_string())),
+                        operator: pwsh_parser::BinaryOperator::Add,
+                        right: Box::new(Expression::Literal(pwsh_parser::Literal::Number(10.0))),
+                    })],
                 }),
             ],
         };
@@ -262,13 +258,11 @@ mod tests {
             stages: vec![
                 Expression::Literal(Literal::Number(1.0)),
                 Expression::ScriptBlock(pwsh_parser::Block {
-                    statements: vec![pwsh_parser::Statement::Expression(
-                        Expression::BinaryOp {
-                            left: Box::new(Expression::Variable("_".to_string())),
-                            operator: pwsh_parser::BinaryOperator::Multiply,
-                            right: Box::new(Expression::Literal(Literal::Number(2.0))),
-                        },
-                    )],
+                    statements: vec![pwsh_parser::Statement::Expression(Expression::BinaryOp {
+                        left: Box::new(Expression::Variable("_".to_string())),
+                        operator: pwsh_parser::BinaryOperator::Multiply,
+                        right: Box::new(Expression::Literal(Literal::Number(2.0))),
+                    })],
                 }),
             ],
         };

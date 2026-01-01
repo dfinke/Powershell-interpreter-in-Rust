@@ -74,9 +74,7 @@ impl Value {
             Value::Function(func) => {
                 format!("function {}", func.name)
             }
-            Value::ScriptBlock(_) => {
-                "{ script block }".to_string()
-            }
+            Value::ScriptBlock(_) => "{ script block }".to_string(),
         }
     }
 

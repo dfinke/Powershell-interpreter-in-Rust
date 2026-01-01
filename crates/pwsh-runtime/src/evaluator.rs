@@ -329,15 +329,15 @@ impl Evaluator {
         pipeline_value: Value,
     ) -> EvalResult {
         self.scope.push_scope();
-        
+
         // Set $_ to the current pipeline value
         self.scope.set_variable_qualified("_", pipeline_value);
-        
+
         let mut result = Value::Null;
         for statement in &script_block.body.statements {
             result = self.eval_statement(statement.clone())?;
         }
-        
+
         self.scope.pop_scope();
         Ok(result)
     }
@@ -1048,16 +1048,16 @@ mod tests {
     #[test]
     fn test_script_block_execution_with_underscore() {
         let mut evaluator = Evaluator::new();
-        
+
         // Parse a script block
         let mut lexer = Lexer::new("{ $_ + 10 }");
         let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap();
-        
+
         // Evaluate to get the script block value
         let result = evaluator.eval(program).unwrap();
-        
+
         // Extract the script block
         if let Value::ScriptBlock(sb) = result {
             // Execute it with $_ = 5
@@ -1073,16 +1073,16 @@ mod tests {
     #[test]
     fn test_script_block_with_comparison() {
         let mut evaluator = Evaluator::new();
-        
+
         // Parse a script block with comparison
         let mut lexer = Lexer::new("{ $_ -gt 5 }");
         let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap();
-        
+
         // Evaluate to get the script block value
         let result = evaluator.eval(program).unwrap();
-        
+
         // Extract the script block
         if let Value::ScriptBlock(sb) = result {
             // Test with value > 5
@@ -1090,7 +1090,7 @@ mod tests {
                 .execute_script_block(&sb, Value::Number(10.0))
                 .unwrap();
             assert_eq!(result1, Value::Boolean(true));
-            
+
             // Test with value <= 5
             let result2 = evaluator
                 .execute_script_block(&sb, Value::Number(3.0))
@@ -1104,16 +1104,16 @@ mod tests {
     #[test]
     fn test_script_block_with_string_operation() {
         let mut evaluator = Evaluator::new();
-        
+
         // Parse a script block with string interpolation
         let mut lexer = Lexer::new(r#"{ "Value: $_" }"#);
         let tokens = lexer.tokenize().unwrap();
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap();
-        
+
         // Evaluate to get the script block value
         let result = evaluator.eval(program).unwrap();
-        
+
         // Extract the script block
         if let Value::ScriptBlock(sb) = result {
             let result = evaluator
@@ -1130,7 +1130,7 @@ mod tests {
         // Week 9 Success Criteria from ROADMAP.md:
         // $filter = { $_ -gt 5 }
         // Can pass script blocks to cmdlets
-        
+
         let result = eval_str(
             r#"
             $filter = { $_ -gt 5 }
@@ -1138,7 +1138,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        
+
         // Verify we can create and assign script blocks
         assert!(matches!(result, Value::ScriptBlock(_)));
     }
