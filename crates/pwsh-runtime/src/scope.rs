@@ -16,6 +16,15 @@ impl Scope {
         }
     }
 
+    /// Find a key in the variables map with case-insensitive comparison
+    /// Returns the actual key if found, None otherwise
+    fn find_key_case_insensitive(&self, name: &str) -> Option<&String> {
+        let name_lower = name.to_lowercase();
+        self.variables
+            .keys()
+            .find(|k| k.to_lowercase() == name_lower)
+    }
+
     /// Get a variable from this scope (case-insensitive for PowerShell compatibility)
     pub fn get(&self, name: &str) -> Option<&Value> {
         // Try exact match first for performance
@@ -24,11 +33,8 @@ impl Scope {
         }
         
         // Fall back to case-insensitive search
-        let name_lower = name.to_lowercase();
-        self.variables
-            .iter()
-            .find(|(k, _)| k.to_lowercase() == name_lower)
-            .map(|(_, v)| v)
+        self.find_key_case_insensitive(name)
+            .and_then(|key| self.variables.get(key))
     }
 
     /// Set a variable in this scope (case-insensitive for PowerShell compatibility)
@@ -40,10 +46,7 @@ impl Scope {
         }
         
         // Check for case-insensitive match
-        let name_lower = name.to_lowercase();
-        if let Some(existing_key) = self.variables.keys()
-            .find(|k| k.to_lowercase() == name_lower)
-            .map(|k| k.clone()) {
+        if let Some(existing_key) = self.find_key_case_insensitive(name).cloned() {
             // Update with the existing key's case
             self.variables.insert(existing_key, value);
         } else {
@@ -60,8 +63,7 @@ impl Scope {
         }
         
         // Fall back to case-insensitive search
-        let name_lower = name.to_lowercase();
-        self.variables.keys().any(|k| k.to_lowercase() == name_lower)
+        self.find_key_case_insensitive(name).is_some()
     }
 }
 
