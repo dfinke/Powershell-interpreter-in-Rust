@@ -1256,6 +1256,39 @@ mod tests {
         assert_eq!(age, Value::Number(30.0));
     }
 
+    #[test]
+    fn test_hashtable_property_access_case_insensitive() {
+        // Test the issue scenario: $person.age should work when property is Age
+        let result = eval_str(
+            r#"
+            $person = @{Name="John"; Age=30}
+            $person.age
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(30.0));
+        
+        // Test with different case variations
+        let result2 = eval_str(
+            r#"
+            $person = @{Name="John"; Age=30}
+            $person.AGE
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result2, Value::Number(30.0));
+        
+        // Test name with different case
+        let result3 = eval_str(
+            r#"
+            $person = @{Name="John"; Age=30}
+            $person.name
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result3, Value::String("John".to_string()));
+    }
+
     // Helper function for tests that need to maintain state
     fn eval_str_with_evaluator(evaluator: &mut Evaluator, input: &str) -> Result<Value, String> {
         let mut lexer = Lexer::new(input);

@@ -103,19 +103,49 @@ impl Value {
         }
     }
 
-    /// Get a property from an object
+    /// Get a property from an object (case-insensitive)
     pub fn get_property(&self, name: &str) -> Option<Value> {
         match self {
-            Value::Object(props) => props.get(name).cloned(),
+            Value::Object(props) => {
+                // Try exact match first for performance
+                if let Some(value) = props.get(name) {
+                    return Some(value.clone());
+                }
+
+                // Fall back to case-insensitive property lookup
+                let name_lower = name.to_lowercase();
+                props
+                    .iter()
+                    .find(|(k, _)| k.to_lowercase() == name_lower)
+                    .map(|(_, v)| v.clone())
+            }
             _ => None,
         }
     }
 
-    /// Set a property on an object
+    /// Set a property on an object (case-insensitive - updates existing key or adds new)
     pub fn set_property(&mut self, name: &str, value: Value) -> Result<(), String> {
         match self {
             Value::Object(props) => {
-                props.insert(name.to_string(), value);
+                // Try exact match first for performance
+                if props.contains_key(name) {
+                    props.insert(name.to_string(), value);
+                    return Ok(());
+                }
+
+                // Fall back to case-insensitive property update: find existing key or add new one
+                let name_lower = name.to_lowercase();
+                if let Some(existing_key) = props
+                    .keys()
+                    .find(|k| k.to_lowercase() == name_lower)
+                    .cloned()
+                {
+                    // Update existing property with original key name
+                    props.insert(existing_key, value);
+                } else {
+                    // Add new property
+                    props.insert(name.to_string(), value);
+                }
                 Ok(())
             }
             _ => Err("Cannot set property on non-object value".to_string()),
@@ -174,4 +204,49 @@ mod tests {
         );
         assert_eq!(obj.get_property("missing"), None);
     }
+
+    #[test]
+    fn test_object_properties_case_insensitive() {
+        let mut obj = Value::Object(HashMap::new());
+        // Set property with mixed case
+        assert!(obj
+            .set_property("Name", Value::String("test".to_string()))
+            .is_ok());
+        
+        // Should retrieve with different case variations
+        assert_eq!(
+            obj.get_property("name"),
+            Some(Value::String("test".to_string()))
+        );
+        assert_eq!(
+            obj.get_property("NAME"),
+            Some(Value::String("test".to_string()))
+        );
+        assert_eq!(
+            obj.get_property("Name"),
+            Some(Value::String("test".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_object_properties_update_preserves_case() {
+        let mut obj = Value::Object(HashMap::new());
+        // Set property with specific case
+        obj.set_property("Age", Value::Number(30.0)).unwrap();
+        
+        // Update with different case should preserve original key
+        obj.set_property("age", Value::Number(31.0)).unwrap();
+        
+        // Should still have only one key (the original)
+        if let Value::Object(map) = &obj {
+            assert_eq!(map.len(), 1);
+            assert!(map.contains_key("Age"));
+        } else {
+            panic!("Expected Object");
+        }
+        
+        // Value should be updated
+        assert_eq!(obj.get_property("age"), Some(Value::Number(31.0)));
+    }
+
 }
