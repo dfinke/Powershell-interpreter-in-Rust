@@ -15,4 +15,4 @@ pub use error::RuntimeError;
 pub use evaluator::{EvalResult, Evaluator};
 pub use pipeline::PipelineExecutor;
 pub use scope::{Scope, ScopeStack};
-pub use value::Value;
+pub use value::{Function, ScriptBlock, Value};

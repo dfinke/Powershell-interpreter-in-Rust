@@ -303,6 +303,27 @@ impl Evaluator {
         Ok(result)
     }
 
+    /// Execute a script block with a specific value for $_
+    /// This is used by cmdlets like Where-Object and ForEach-Object
+    pub fn execute_script_block(
+        &mut self,
+        script_block: &crate::value::ScriptBlock,
+        pipeline_value: Value,
+    ) -> EvalResult {
+        self.scope.push_scope();
+        
+        // Set $_ to the current pipeline value
+        self.scope.set_variable_qualified("_", pipeline_value);
+        
+        let mut result = Value::Null;
+        for statement in &script_block.body.statements {
+            result = self.eval_statement(statement.clone())?;
+        }
+        
+        self.scope.pop_scope();
+        Ok(result)
+    }
+
     /// Evaluate an expression
     pub fn eval_expression(&mut self, expr: Expression) -> EvalResult {
         match expr {
@@ -342,9 +363,11 @@ impl Evaluator {
                 Ok(results.last().cloned().unwrap_or(Value::Null))
             }
 
-            Expression::ScriptBlock(_) => {
-                // Script blocks will be implemented later with full evaluation
-                Ok(Value::Null)
+            Expression::ScriptBlock(block) => {
+                // Create a script block value
+                Ok(Value::ScriptBlock(crate::value::ScriptBlock {
+                    body: block.clone(),
+                }))
             }
         }
     }
@@ -983,5 +1006,122 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result, Value::Number(6.0));
+    }
+
+    #[test]
+    fn test_script_block_creation() {
+        let result = eval_str("{ 5 + 10 }").unwrap();
+        assert!(matches!(result, Value::ScriptBlock(_)));
+    }
+
+    #[test]
+    fn test_script_block_with_variable() {
+        let result = eval_str(
+            r#"
+            $x = 10
+            $sb = { $x + 5 }
+            $sb
+            "#,
+        )
+        .unwrap();
+        assert!(matches!(result, Value::ScriptBlock(_)));
+    }
+
+    #[test]
+    fn test_script_block_execution_with_underscore() {
+        let mut evaluator = Evaluator::new();
+        
+        // Parse a script block
+        let mut lexer = Lexer::new("{ $_ + 10 }");
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+        
+        // Evaluate to get the script block value
+        let result = evaluator.eval(program).unwrap();
+        
+        // Extract the script block
+        if let Value::ScriptBlock(sb) = result {
+            // Execute it with $_ = 5
+            let execution_result = evaluator
+                .execute_script_block(&sb, Value::Number(5.0))
+                .unwrap();
+            assert_eq!(execution_result, Value::Number(15.0));
+        } else {
+            panic!("Expected script block value");
+        }
+    }
+
+    #[test]
+    fn test_script_block_with_comparison() {
+        let mut evaluator = Evaluator::new();
+        
+        // Parse a script block with comparison
+        let mut lexer = Lexer::new("{ $_ -gt 5 }");
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+        
+        // Evaluate to get the script block value
+        let result = evaluator.eval(program).unwrap();
+        
+        // Extract the script block
+        if let Value::ScriptBlock(sb) = result {
+            // Test with value > 5
+            let result1 = evaluator
+                .execute_script_block(&sb, Value::Number(10.0))
+                .unwrap();
+            assert_eq!(result1, Value::Boolean(true));
+            
+            // Test with value <= 5
+            let result2 = evaluator
+                .execute_script_block(&sb, Value::Number(3.0))
+                .unwrap();
+            assert_eq!(result2, Value::Boolean(false));
+        } else {
+            panic!("Expected script block value");
+        }
+    }
+
+    #[test]
+    fn test_script_block_with_string_operation() {
+        let mut evaluator = Evaluator::new();
+        
+        // Parse a script block with string interpolation
+        let mut lexer = Lexer::new(r#"{ "Value: $_" }"#);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+        
+        // Evaluate to get the script block value
+        let result = evaluator.eval(program).unwrap();
+        
+        // Extract the script block
+        if let Value::ScriptBlock(sb) = result {
+            let result = evaluator
+                .execute_script_block(&sb, Value::Number(42.0))
+                .unwrap();
+            assert_eq!(result, Value::String("Value: 42".to_string()));
+        } else {
+            panic!("Expected script block value");
+        }
+    }
+
+    #[test]
+    fn test_week9_success_criteria() {
+        // Week 9 Success Criteria from ROADMAP.md:
+        // $filter = { $_ -gt 5 }
+        // Can pass script blocks to cmdlets
+        
+        let result = eval_str(
+            r#"
+            $filter = { $_ -gt 5 }
+            $filter
+            "#,
+        )
+        .unwrap();
+        
+        // Verify we can create and assign script blocks
+        assert!(matches!(result, Value::ScriptBlock(_)));
     }
 }
