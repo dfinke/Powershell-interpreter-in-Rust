@@ -19,7 +19,7 @@ fn is_input_incomplete(input: &str) -> bool {
         }
 
         match ch {
-            '`' if !in_single_quote => escape_next = true, // Backticks escape in double quotes too
+            '\\' if !in_single_quote => escape_next = true, // Backslash escapes in double quotes too
             '"' if !in_single_quote => in_double_quote = !in_double_quote,
             '\'' if !in_double_quote => in_single_quote = !in_single_quote,
             '{' if !in_double_quote && !in_single_quote => brace_count += 1,
@@ -83,7 +83,7 @@ fn main() {
                     accumulated_input.push_str(line.trim_end());
                 }
                 Err(e) => {
-                    eprintln!("Error reading input: {}\n", e);
+                    eprintln!("Error reading input: {}", e);
                     read_error = true;
                     break;
                 }
