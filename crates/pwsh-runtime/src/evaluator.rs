@@ -49,12 +49,12 @@ impl Evaluator {
 
     /// Set a variable in the current scope
     pub fn set_variable(&mut self, name: &str, value: Value) {
-        self.scope.set_variable(name, value);
+        self.scope.set_variable_qualified(name, value);
     }
 
     /// Get a variable from the current scope
     pub fn get_variable(&self, name: &str) -> Option<Value> {
-        self.scope.get_variable(name)
+        self.scope.get_variable_qualified(name)
     }
 
     /// Evaluate a single statement
@@ -64,7 +64,7 @@ impl Evaluator {
 
             Statement::Assignment { variable, value } => {
                 let val = self.eval_expression(value)?;
-                self.scope.set_variable(&variable, val);
+                self.scope.set_variable_qualified(&variable, val);
                 Ok(Value::Null)
             }
 
@@ -309,7 +309,7 @@ impl Evaluator {
             Expression::Literal(lit) => self.eval_literal(lit),
 
             Expression::Variable(name) => {
-                Ok(self.scope.get_variable(&name).unwrap_or(Value::Number(0.0)))
+                Ok(self.scope.get_variable_qualified(&name).unwrap_or(Value::Number(0.0)))
             }
 
             Expression::BinaryOp {
@@ -868,5 +868,119 @@ mod tests {
         // Variables should also be case-insensitive
         let result = eval_str("$MyVar = 42\n$myvar").unwrap();
         assert_eq!(result, Value::Number(42.0));
+    }
+
+    // Week 8: Scope qualifier tests
+    #[test]
+    fn test_global_scope_variable() {
+        let result = eval_str("$global:x = 5\n$global:x").unwrap();
+        assert_eq!(result, Value::Number(5.0));
+    }
+
+    #[test]
+    fn test_global_scope_from_nested_scope() {
+        let result = eval_str(
+            r#"
+            $global:x = 5
+            function Test {
+                $global:x
+            }
+            Test
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(5.0));
+    }
+
+    #[test]
+    fn test_global_scope_modification_from_function() {
+        let result = eval_str(
+            r#"
+            $global:counter = 0
+            function Increment {
+                $global:counter = $global:counter + 1
+            }
+            Increment
+            Increment
+            $global:counter
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(2.0));
+    }
+
+    #[test]
+    fn test_local_scope_variable() {
+        let result = eval_str(
+            r#"
+            $x = 1
+            function Test {
+                $local:x = 2
+                $local:x
+            }
+            Test
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(2.0));
+    }
+
+    #[test]
+    fn test_local_vs_global_scope() {
+        let result = eval_str(
+            r#"
+            $x = 100
+            function Test {
+                $local:x = 200
+                $local:x + $global:x
+            }
+            Test
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(300.0));
+    }
+
+    #[test]
+    fn test_week8_success_criteria() {
+        // From ROADMAP Week 8 success criteria
+        let result = eval_str(
+            r#"
+            $global:x = 5
+            function Test {
+                $local:y = 10
+                $x + $y
+            }
+            Test
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(15.0));
+    }
+
+    #[test]
+    fn test_script_scope_variable() {
+        let result = eval_str("$script:z = 100\n$script:z").unwrap();
+        assert_eq!(result, Value::Number(100.0));
+    }
+
+    #[test]
+    fn test_scope_qualifier_case_insensitive() {
+        let result = eval_str("$GLOBAL:x = 42\n$global:x").unwrap();
+        assert_eq!(result, Value::Number(42.0));
+    }
+
+    #[test]
+    fn test_mixed_scope_qualifiers() {
+        let result = eval_str(
+            r#"
+            $global:a = 1
+            $local:b = 2
+            $script:c = 3
+            $global:a + $local:b + $script:c
+            "#,
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(6.0));
     }
 }

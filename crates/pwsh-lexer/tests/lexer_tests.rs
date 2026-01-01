@@ -363,3 +363,48 @@ fn test_empty_interpolated_string() {
     let tokens = lexer.tokenize().unwrap();
     assert_eq!(tokens[0].token, Token::String(String::new()));
 }
+
+// Week 8: Scope qualifier tests
+#[test]
+fn test_tokenize_global_scope_variable() {
+    let mut lexer = Lexer::new("$global:x");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 2); // Variable + Eof
+    assert_eq!(tokens[0].token, Token::Variable("global:x".to_string()));
+    assert_eq!(tokens[1].token, Token::Eof);
+}
+
+#[test]
+fn test_tokenize_local_scope_variable() {
+    let mut lexer = Lexer::new("$local:y");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 2);
+    assert_eq!(tokens[0].token, Token::Variable("local:y".to_string()));
+}
+
+#[test]
+fn test_tokenize_script_scope_variable() {
+    let mut lexer = Lexer::new("$script:z");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 2);
+    assert_eq!(tokens[0].token, Token::Variable("script:z".to_string()));
+}
+
+#[test]
+fn test_tokenize_scope_qualified_assignment() {
+    let mut lexer = Lexer::new("$global:counter = 100");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens.len(), 4); // Variable, =, Number, Eof
+    assert_eq!(tokens[0].token, Token::Variable("global:counter".to_string()));
+    assert_eq!(tokens[1].token, Token::Assignment);
+    assert_eq!(tokens[2].token, Token::Number(100.0));
+}
+
+#[test]
+fn test_tokenize_scope_qualified_in_expression() {
+    let mut lexer = Lexer::new("$global:x + $local:y");
+    let tokens = lexer.tokenize().unwrap();
+    assert_eq!(tokens[0].token, Token::Variable("global:x".to_string()));
+    assert_eq!(tokens[1].token, Token::Plus);
+    assert_eq!(tokens[2].token, Token::Variable("local:y".to_string()));
+}
