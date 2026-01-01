@@ -45,6 +45,7 @@ pub enum Token {
     Pipeline,     // |
     Assignment,   // =
     Semicolon,    // ;
+    At,           // @
     Newline,
 
     // Special
@@ -106,6 +107,7 @@ impl std::fmt::Display for Token {
             Token::Pipeline => write!(f, "Pipeline"),
             Token::Assignment => write!(f, "Assignment"),
             Token::Semicolon => write!(f, "Semicolon"),
+            Token::At => write!(f, "At"),
             Token::Newline => write!(f, "Newline"),
             Token::Eof => write!(f, "Eof"),
         }
