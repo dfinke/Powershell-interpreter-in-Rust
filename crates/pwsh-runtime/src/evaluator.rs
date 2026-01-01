@@ -236,9 +236,10 @@ impl Evaluator {
                     let value = self.eval_expression(expr.clone())?;
                     positional_args.push(value);
                 }
-                pwsh_parser::Argument::Named { .. } => {
+                pwsh_parser::Argument::Named { name, .. } => {
                     // Named parameters not yet supported for user functions
-                    // This is a future enhancement
+                    // Log a warning and skip this argument
+                    eprintln!("Warning: Named parameter '-{}' is not yet supported for user-defined functions and will be ignored", name);
                 }
             }
         }
