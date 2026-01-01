@@ -1266,3 +1266,38 @@ mod tests {
         evaluator.eval(program).map_err(|e| e.to_string())
     }
 }
+
+#[test]
+fn test_array_literal() {
+    let mut evaluator = Evaluator::new();
+    let arr_expr = Expression::Array(vec![
+        Expression::Literal(Literal::Number(1.0)),
+        Expression::Literal(Literal::Number(2.0)),
+        Expression::Literal(Literal::Number(3.0)),
+    ]);
+
+    let result = evaluator.eval_expression(arr_expr).unwrap();
+    match result {
+        Value::Array(items) => {
+            assert_eq!(items.len(), 3);
+            assert_eq!(items[0], Value::Number(1.0));
+            assert_eq!(items[1], Value::Number(2.0));
+            assert_eq!(items[2], Value::Number(3.0));
+        }
+        _ => panic!("Expected array value"),
+    }
+}
+
+#[test]
+fn test_empty_array() {
+    let mut evaluator = Evaluator::new();
+    let arr_expr = Expression::Array(vec![]);
+
+    let result = evaluator.eval_expression(arr_expr).unwrap();
+    match result {
+        Value::Array(items) => {
+            assert_eq!(items.len(), 0);
+        }
+        _ => panic!("Expected array value"),
+    }
+}
