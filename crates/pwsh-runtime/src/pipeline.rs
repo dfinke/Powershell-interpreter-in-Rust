@@ -83,7 +83,7 @@ impl<'a> PipelineExecutor<'a> {
                 } else {
                     // No pipeline input, just evaluate the expression
                     let result = evaluator.eval_expression(stage.clone())?;
-                    
+
                     // If the result is an array, unroll it to the pipeline
                     if let Value::Array(items) = result {
                         Ok(items)

@@ -19,12 +19,12 @@ impl Cmdlet for WhereObjectCmdlet {
             if let Value::ScriptBlock(script_block) = first_arg {
                 // Filter using script block
                 let mut results = Vec::new();
-                
+
                 for item in context.pipeline_input {
                     // Execute the script block with $_ set to the current item
                     // We clone here because execute_script_block takes ownership
                     let result = evaluator.execute_script_block(script_block, item.clone())?;
-                    
+
                     // If the result is truthy, include the item
                     if result.to_bool() {
                         results.push(item);
@@ -33,7 +33,7 @@ impl Cmdlet for WhereObjectCmdlet {
                 return Ok(results);
             }
         }
-        
+
         // Check if we have a -Property parameter (simple name match)
         if let Some(property_value) = context.get_parameter("Property") {
             // Filter objects that have this property set to a truthy value

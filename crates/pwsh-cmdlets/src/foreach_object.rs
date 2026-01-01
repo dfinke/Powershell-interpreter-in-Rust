@@ -19,7 +19,7 @@ impl Cmdlet for ForEachObjectCmdlet {
             if let Value::ScriptBlock(script_block) = first_arg {
                 // Execute script block for each item
                 let mut results = Vec::new();
-                
+
                 for item in context.pipeline_input {
                     // Execute the script block with $_ set to the current item
                     let result = evaluator.execute_script_block(script_block, item)?;
@@ -28,7 +28,7 @@ impl Cmdlet for ForEachObjectCmdlet {
                 return Ok(results);
             }
         }
-        
+
         // Check if we have a -MemberName parameter (access a property)
         if let Some(member_value) = context.get_parameter("MemberName") {
             let member_name = member_value.to_string();

@@ -433,7 +433,7 @@ impl Parser {
             // Hashtable: @{key=value; ...} or Array: @(item1, item2, ...)
             Token::At => {
                 self.advance(); // consume @
-                
+
                 // Check if it's a hashtable or array
                 if self.check(&Token::LeftBrace) {
                     // Hashtable: @{key=value; ...}

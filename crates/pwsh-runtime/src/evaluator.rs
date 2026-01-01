@@ -186,7 +186,7 @@ impl Evaluator {
                 } else {
                     // No pipeline input, just evaluate the expression
                     let result = self.eval_expression(stage.clone())?;
-                    
+
                     // If the result is an array, unroll it to the pipeline
                     if let Value::Array(items) = result {
                         Ok(items)
@@ -245,16 +245,15 @@ impl Evaluator {
         // SAFETY: We ensure that the cmdlet execution doesn't invalidate the registry reference
         // The cmdlet will only mutate the scope/state, not the registry itself
         let self_ptr = self as *mut Evaluator;
-        let cmdlet = self.cmdlet_registry.get(name).ok_or_else(|| {
-            RuntimeError::UndefinedFunction(name.to_string())
-        })?;
+        let cmdlet = self
+            .cmdlet_registry
+            .get(name)
+            .ok_or_else(|| RuntimeError::UndefinedFunction(name.to_string()))?;
 
         // Execute the cmdlet
         // SAFETY: The cmdlet reference and the mutable self reference don't overlap in memory
         // as cmdlet points into the registry and the mutable operations affect scope/state
-        unsafe {
-            cmdlet.execute(context, &mut *self_ptr)
-        }
+        unsafe { cmdlet.execute(context, &mut *self_ptr) }
     }
 
     /// Call a user-defined function

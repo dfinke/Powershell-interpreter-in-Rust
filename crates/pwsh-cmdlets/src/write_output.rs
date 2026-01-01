@@ -15,7 +15,7 @@ impl Cmdlet for WriteOutputCmdlet {
         _evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
         let mut output = Vec::new();
-        
+
         // If there's pipeline input, output it
         if !context.pipeline_input.is_empty() {
             for value in context.pipeline_input {
