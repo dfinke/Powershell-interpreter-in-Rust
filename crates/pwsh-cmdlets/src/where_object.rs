@@ -22,6 +22,7 @@ impl Cmdlet for WhereObjectCmdlet {
                 
                 for item in context.pipeline_input {
                     // Execute the script block with $_ set to the current item
+                    // We clone here because execute_script_block takes ownership
                     let result = evaluator.execute_script_block(script_block, item.clone())?;
                     
                     // If the result is truthy, include the item

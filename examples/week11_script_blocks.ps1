@@ -15,7 +15,7 @@ Write-Output "2. Transform values with ForEach-Object"
 Write-Output ""
 
 # Complex filtering
-Write-Output "3. Filter even numbers"
+Write-Output "3. Filter numbers greater than 5"
 @(1,2,3,4,5,6,7,8,9,10) | Where-Object { $_ -gt 5 }
 Write-Output ""
 
