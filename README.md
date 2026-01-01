@@ -4,11 +4,11 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 
 ## 🚀 Project Status
 
-**Current Phase**: Week 8 Complete - Advanced Scoping! 🎉  
-**Latest Achievement**: Scope qualifiers ($global:, $local:, $script:) for explicit scope control  
+**Current Phase**: Week 9 Complete - Script Blocks! 🎉  
+**Latest Achievement**: Script blocks as first-class values with full pipeline integration  
 **Target 1.0**: Week 36 (Production-ready interpreter)
 
-### What Works Now (Week 8)
+### What Works Now (Week 9)
 - ✅ Complete lexer and parser
 - ✅ Runtime evaluation engine
 - ✅ Object-based pipeline execution
@@ -19,9 +19,12 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ User-defined functions
 - ✅ Parameter binding with defaults
 - ✅ Return statements
-- ✅ **Scope qualifiers ($global:, $local:, $script:)**
-- ✅ **Advanced scope management**
-- ✅ **Closures (basic)**
+- ✅ Scope qualifiers ($global:, $local:, $script:)
+- ✅ Advanced scope management
+- ✅ Closures (basic)
+- ✅ **Script blocks as first-class values**
+- ✅ **Pipeline integration with $_**
+- ✅ **Script block execution**
 - ✅ Interactive REPL
 
 **Try it now:**
@@ -118,6 +121,11 @@ powershell-interpreter/
 
 **MVP Demo Script:**
 ```powershell
+# Demonstrate script blocks (Week 9)
+$filter = { $_ -gt 5 }
+1 | { $_ + 5 }        # Output: 6
+10 | { $_ * 2 }       # Output: 20
+
 # Demonstrate scope qualifiers (Week 8)
 $global:x = 5
 function Test {
@@ -158,9 +166,10 @@ $selected | ForEach-Object { Write-Output "$($_.Name): $($_.CPU)" }
 - **MVP Delivery** ✅
 
 ### Phase 2: Functions & Scope (Weeks 7-9)
-- Function definitions, parameter binding, closures
+- Function definitions, parameter binding, closures, script blocks
 - **Week 7 Complete** ✅
 - **Week 8 Complete** ✅
+- **Week 9 Complete** ✅
 
 ### Phase 3: Object Pipeline (Weeks 10-14)
 - Object system, core cmdlets, full pipeline
@@ -286,6 +295,15 @@ We welcome contributions! See our contribution guidelines:
 - [x] 186 total tests passing
 - [x] 22 new tests added
 - [x] 100% test coverage for scope features
+
+### Week 9 Success - ✅ ACHIEVED
+- [x] Script blocks as first-class values
+- [x] Script block creation and assignment
+- [x] Pipeline integration with script blocks
+- [x] `$_` automatic variable support
+- [x] 89 total tests passing
+- [x] 8 new tests added
+- [x] 100% test coverage for script block features
 
 ### Beta Success (Week 26)
 - [ ] 30+ cmdlets

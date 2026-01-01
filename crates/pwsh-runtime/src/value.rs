@@ -10,6 +10,12 @@ pub struct Function {
     pub body: pwsh_parser::Block,
 }
 
+/// Script block stored as a value (anonymous code block)
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScriptBlock {
+    pub body: pwsh_parser::Block,
+}
+
 /// A value in the PowerShell runtime
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -27,6 +33,8 @@ pub enum Value {
     Array(Vec<Value>),
     /// Function definition
     Function(Function),
+    /// Script block (anonymous code block)
+    ScriptBlock(ScriptBlock),
 }
 
 impl Value {
@@ -66,6 +74,7 @@ impl Value {
             Value::Function(func) => {
                 format!("function {}", func.name)
             }
+            Value::ScriptBlock(_) => "{ script block }".to_string(),
         }
     }
 
@@ -79,6 +88,7 @@ impl Value {
             Value::Object(_) => true,
             Value::Array(items) => !items.is_empty(),
             Value::Function(_) => true,
+            Value::ScriptBlock(_) => true,
         }
     }
 
