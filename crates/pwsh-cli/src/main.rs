@@ -8,7 +8,8 @@ fn is_input_incomplete(input: &str) -> bool {
     let mut brace_count = 0;
     let mut paren_count = 0;
     let mut bracket_count = 0;
-    let mut in_string = false;
+    let mut in_double_quote = false;
+    let mut in_single_quote = false;
     let mut escape_next = false;
 
     for ch in input.chars() {
@@ -18,20 +19,22 @@ fn is_input_incomplete(input: &str) -> bool {
         }
 
         match ch {
-            '`' => escape_next = true,
-            '"' => in_string = !in_string,
-            '{' if !in_string => brace_count += 1,
-            '}' if !in_string => brace_count -= 1,
-            '(' if !in_string => paren_count += 1,
-            ')' if !in_string => paren_count -= 1,
-            '[' if !in_string => bracket_count += 1,
-            ']' if !in_string => bracket_count -= 1,
+            '`' if !in_single_quote => escape_next = true,
+            '"' if !in_single_quote && !escape_next => in_double_quote = !in_double_quote,
+            '\'' if !in_double_quote && !escape_next => in_single_quote = !in_single_quote,
+            '{' if !in_double_quote && !in_single_quote => brace_count += 1,
+            '}' if !in_double_quote && !in_single_quote => brace_count -= 1,
+            '(' if !in_double_quote && !in_single_quote => paren_count += 1,
+            ')' if !in_double_quote && !in_single_quote => paren_count -= 1,
+            '[' if !in_double_quote && !in_single_quote => bracket_count += 1,
+            ']' if !in_double_quote && !in_single_quote => bracket_count -= 1,
             _ => {}
         }
     }
 
     // Input is incomplete if there are unclosed braces, parens, brackets, or strings
-    in_string || brace_count > 0 || paren_count > 0 || bracket_count > 0
+    // Only count positive values to avoid treating malformed input as incomplete
+    in_double_quote || in_single_quote || brace_count > 0 || paren_count > 0 || bracket_count > 0
 }
 
 fn main() {
