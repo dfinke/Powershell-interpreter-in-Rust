@@ -16,19 +16,52 @@ impl Scope {
         }
     }
 
-    /// Get a variable from this scope
+    /// Get a variable from this scope (case-insensitive for PowerShell compatibility)
     pub fn get(&self, name: &str) -> Option<&Value> {
-        self.variables.get(name)
+        // Try exact match first for performance
+        if let Some(value) = self.variables.get(name) {
+            return Some(value);
+        }
+        
+        // Fall back to case-insensitive search
+        let name_lower = name.to_lowercase();
+        self.variables
+            .iter()
+            .find(|(k, _)| k.to_lowercase() == name_lower)
+            .map(|(_, v)| v)
     }
 
-    /// Set a variable in this scope
+    /// Set a variable in this scope (case-insensitive for PowerShell compatibility)
     pub fn set(&mut self, name: &str, value: Value) {
-        self.variables.insert(name.to_string(), value);
+        // Try exact match first
+        if self.variables.contains_key(name) {
+            self.variables.insert(name.to_string(), value);
+            return;
+        }
+        
+        // Check for case-insensitive match
+        let name_lower = name.to_lowercase();
+        if let Some(existing_key) = self.variables.keys()
+            .find(|k| k.to_lowercase() == name_lower)
+            .map(|k| k.clone()) {
+            // Update with the existing key's case
+            self.variables.insert(existing_key, value);
+        } else {
+            // New variable, use the provided case
+            self.variables.insert(name.to_string(), value);
+        }
     }
 
-    /// Check if a variable exists in this scope
+    /// Check if a variable exists in this scope (case-insensitive for PowerShell compatibility)
     pub fn contains(&self, name: &str) -> bool {
-        self.variables.contains_key(name)
+        // Try exact match first for performance
+        if self.variables.contains_key(name) {
+            return true;
+        }
+        
+        // Fall back to case-insensitive search
+        let name_lower = name.to_lowercase();
+        self.variables.keys().any(|k| k.to_lowercase() == name_lower)
     }
 }
 
