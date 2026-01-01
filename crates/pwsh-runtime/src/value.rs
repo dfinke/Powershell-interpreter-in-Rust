@@ -2,6 +2,14 @@
 use std::collections::HashMap;
 use std::fmt;
 
+/// Function definition stored as a value
+#[derive(Debug, Clone, PartialEq)]
+pub struct Function {
+    pub name: String,
+    pub parameters: Vec<pwsh_parser::Parameter>,
+    pub body: pwsh_parser::Block,
+}
+
 /// A value in the PowerShell runtime
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -17,6 +25,8 @@ pub enum Value {
     Object(HashMap<String, Value>),
     /// Array of values
     Array(Vec<Value>),
+    /// Function definition
+    Function(Function),
 }
 
 impl Value {
@@ -53,6 +63,9 @@ impl Value {
                 let parts: Vec<String> = items.iter().map(|v| v.display_string()).collect();
                 format!("@({})", parts.join(", "))
             }
+            Value::Function(func) => {
+                format!("function {}", func.name)
+            }
         }
     }
 
@@ -65,6 +78,7 @@ impl Value {
             Value::String(s) => !s.is_empty(),
             Value::Object(_) => true,
             Value::Array(items) => !items.is_empty(),
+            Value::Function(_) => true,
         }
     }
 

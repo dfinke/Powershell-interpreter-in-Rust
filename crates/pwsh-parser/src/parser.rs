@@ -194,12 +194,15 @@ impl Parser {
         self.consume(&Token::Return, "return")?;
 
         // Return can have an optional expression
-        let value =
-            if self.check(&Token::Newline) || self.check(&Token::Semicolon) || self.is_at_end() {
-                None
-            } else {
-                Some(self.parse_expression()?)
-            };
+        let value = if self.check(&Token::Newline)
+            || self.check(&Token::Semicolon)
+            || self.check(&Token::RightBrace)
+            || self.is_at_end()
+        {
+            None
+        } else {
+            Some(self.parse_expression()?)
+        };
 
         self.consume_statement_terminator();
         Ok(Statement::Return(value))

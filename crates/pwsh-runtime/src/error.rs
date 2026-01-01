@@ -1,6 +1,8 @@
 /// Runtime error types
 use std::fmt;
 
+use crate::value::Value;
+
 /// Errors that can occur during runtime evaluation
 #[derive(Debug, Clone, PartialEq)]
 pub enum RuntimeError {
@@ -22,6 +24,8 @@ pub enum RuntimeError {
     InvalidPropertyAccess(String),
     /// Cmdlet or function not found
     UndefinedFunction(String),
+    /// Early return from function (internal use only)
+    EarlyReturn(Value),
 }
 
 impl fmt::Display for RuntimeError {
@@ -54,6 +58,12 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::UndefinedFunction(name) => {
                 write!(f, "The term '{name}' is not recognized as a cmdlet, function, or operable program")
+            }
+            RuntimeError::EarlyReturn(_) => {
+                write!(
+                    f,
+                    "Internal error: EarlyReturn should be handled by function call"
+                )
             }
         }
     }
