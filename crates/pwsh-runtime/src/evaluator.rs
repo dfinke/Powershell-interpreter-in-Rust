@@ -84,18 +84,23 @@ impl Evaluator {
             }
 
             Statement::Return(expr) => {
-                // For now, we'll just evaluate and return the value
-                // In a full implementation, this would need special handling to break out of functions
-                if let Some(expression) = expr {
-                    self.eval_expression(expression)
+                // Throw an EarlyReturn error to propagate up the call stack
+                let value = if let Some(expression) = expr {
+                    self.eval_expression(expression)?
                 } else {
-                    Ok(Value::Null)
-                }
+                    Value::Null
+                };
+                Err(RuntimeError::EarlyReturn(value))
             }
 
-            Statement::FunctionDef { .. } => {
-                // Function definitions will be implemented in Phase 2
-                // For now, just return null
+            Statement::FunctionDef { name, parameters, body } => {
+                // Store the function as a value in the current scope
+                let func = crate::value::Function {
+                    name: name.clone(),
+                    parameters,
+                    body,
+                };
+                self.scope.set_variable(&name, Value::Function(func));
                 Ok(Value::Null)
             }
 
@@ -168,9 +173,19 @@ impl Evaluator {
         arguments: &[pwsh_parser::Argument],
         input: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
+        // First, check if this is a user-defined function
+        if let Some(func_value) = self.scope.get_variable(name) {
+            if let Value::Function(func) = func_value {
+                // Call the user-defined function
+                let result = self.call_function(&func, arguments)?;
+                return Ok(vec![result]);
+            }
+        }
+
+        // If not a function, try cmdlets
         use crate::cmdlet::CmdletContext;
 
-        // First, check if cmdlet exists
+        // Check if cmdlet exists
         if !self.cmdlet_registry.contains(name) {
             return Err(RuntimeError::UndefinedFunction(name.to_string()));
         }
@@ -204,6 +219,72 @@ impl Evaluator {
 
         // Execute the cmdlet
         cmdlet.execute(context)
+    }
+
+    /// Call a user-defined function
+    fn call_function(
+        &mut self,
+        func: &crate::value::Function,
+        arguments: &[pwsh_parser::Argument],
+    ) -> EvalResult {
+        // Create a new scope for the function
+        self.scope.push_scope();
+
+        // Evaluate arguments
+        let mut positional_args = Vec::new();
+        for arg in arguments {
+            match arg {
+                pwsh_parser::Argument::Positional(expr) => {
+                    let value = self.eval_expression(expr.clone())?;
+                    positional_args.push(value);
+                }
+                pwsh_parser::Argument::Named { .. } => {
+                    // Named parameters not yet supported for user functions
+                    // This is a future enhancement
+                }
+            }
+        }
+
+        // Bind parameters to arguments
+        for (i, param) in func.parameters.iter().enumerate() {
+            let value = if i < positional_args.len() {
+                // Use provided argument
+                positional_args[i].clone()
+            } else if let Some(default_expr) = &param.default_value {
+                // Use default value
+                self.eval_expression(default_expr.clone())?
+            } else {
+                // No value provided and no default - use Null
+                Value::Null
+            };
+            self.scope.define_variable(&param.name, value);
+        }
+
+        // Execute the function body
+        let result = self.eval_function_body(&func.body);
+
+        // Pop the function scope
+        self.scope.pop_scope();
+
+        result
+    }
+
+    /// Evaluate a function body (handles return statements specially)
+    fn eval_function_body(&mut self, block: &Block) -> EvalResult {
+        let mut result = Value::Null;
+
+        for statement in &block.statements {
+            match self.eval_statement(statement.clone()) {
+                Ok(val) => result = val,
+                Err(RuntimeError::EarlyReturn(return_value)) => {
+                    // Catch early return and return the value
+                    return Ok(return_value);
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        Ok(result)
     }
 
     /// Evaluate a block of statements
@@ -636,5 +717,116 @@ mod tests {
     fn test_eval_nested_scopes() {
         let result = eval_str("$x = 1\nif (true) { $y = 2\n$x + $y }").unwrap();
         assert_eq!(result, Value::Number(3.0));
+    }
+
+    #[test]
+    fn test_function_definition() {
+        let result = eval_str("function Add($a, $b) { $a + $b }").unwrap();
+        assert_eq!(result, Value::Null);
+    }
+
+    #[test]
+    fn test_function_call_simple() {
+        let result = eval_str("function Add($a, $b) { $a + $b }\nAdd 5 10").unwrap();
+        assert_eq!(result, Value::Number(15.0));
+    }
+
+    #[test]
+    fn test_function_call_with_return() {
+        let result = eval_str("function Double($x) { return $x * 2 }\nDouble 21").unwrap();
+        assert_eq!(result, Value::Number(42.0));
+    }
+
+    #[test]
+    fn test_function_with_explicit_return() {
+        let result = eval_str("function GetFive() { return 5 }\nGetFive").unwrap();
+        assert_eq!(result, Value::Number(5.0));
+    }
+
+    #[test]
+    fn test_function_with_implicit_return() {
+        let result = eval_str("function GetTen() { 10 }\nGetTen").unwrap();
+        assert_eq!(result, Value::Number(10.0));
+    }
+
+    #[test]
+    fn test_function_with_multiple_statements() {
+        let result =
+            eval_str("function Calculate($x) { $y = $x * 2\n$z = $y + 10\n$z }\nCalculate 5")
+                .unwrap();
+        assert_eq!(result, Value::Number(20.0));
+    }
+
+    #[test]
+    fn test_function_with_default_parameter() {
+        let result = eval_str("function Greet($name = \"World\") { $name }\nGreet").unwrap();
+        assert_eq!(result, Value::String("World".to_string()));
+    }
+
+    #[test]
+    fn test_function_override_default_parameter() {
+        let result =
+            eval_str("function Greet($name = \"World\") { $name }\nGreet \"Alice\"").unwrap();
+        assert_eq!(result, Value::String("Alice".to_string()));
+    }
+
+    #[test]
+    fn test_function_no_parameters() {
+        let result = eval_str("function GetAnswer() { 42 }\nGetAnswer").unwrap();
+        assert_eq!(result, Value::Number(42.0));
+    }
+
+    #[test]
+    fn test_function_with_variables() {
+        let result = eval_str("function Test() { $x = 1\n$y = 2\n$x + $y }\nTest").unwrap();
+        assert_eq!(result, Value::Number(3.0));
+    }
+
+    #[test]
+    fn test_function_scope_isolation() {
+        let result = eval_str(
+            "$x = 100\nfunction Test() { $x = 1\n$x }\n$result = Test\n$result",
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(1.0));
+    }
+
+    #[test]
+    fn test_function_can_access_outer_scope() {
+        let result = eval_str("$x = 100\nfunction Test() { $x }\nTest").unwrap();
+        assert_eq!(result, Value::Number(100.0));
+    }
+
+    #[test]
+    fn test_function_early_return() {
+        let result = eval_str(
+            "function Test($x) { if ($x -eq 5) { return 100 }\nreturn 200 }\nTest 5",
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(100.0));
+    }
+
+    #[test]
+    fn test_function_return_without_value() {
+        let result = eval_str("function Test() { return }\nTest").unwrap();
+        assert_eq!(result, Value::Null);
+    }
+
+    #[test]
+    fn test_nested_function_calls() {
+        let result = eval_str(
+            "function Double($x) { $x * 2 }\nfunction Quad($x) { Double (Double $x) }\nQuad 5",
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(20.0));
+    }
+
+    #[test]
+    fn test_function_with_conditional() {
+        let result = eval_str(
+            "function Max($a, $b) { if ($a -gt $b) { $a } else { $b } }\nMax 10 5",
+        )
+        .unwrap();
+        assert_eq!(result, Value::Number(10.0));
     }
 }

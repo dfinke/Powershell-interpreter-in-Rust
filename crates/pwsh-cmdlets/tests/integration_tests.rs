@@ -80,3 +80,48 @@ fn test_week6_success_criteria_variable() {
     let result = eval_with_cmdlets("$x = 5\nWrite-Output $x").unwrap();
     assert_eq!(result, Value::Number(5.0));
 }
+
+// Week 7: Function Definitions - Integration Tests
+
+#[test]
+fn test_function_with_write_output() {
+    let result = eval_with_cmdlets("function Test() { Write-Output 42 }\nTest").unwrap();
+    assert_eq!(result, Value::Number(42.0));
+}
+
+#[test]
+fn test_function_calling_cmdlet_with_parameter() {
+    let result = eval_with_cmdlets(
+        "function Greet($name) { Write-Output \"Hello $name\" }\nGreet \"Alice\"",
+    )
+    .unwrap();
+    assert_eq!(result, Value::String("Hello Alice".to_string()));
+}
+
+#[test]
+fn test_week7_success_criteria_simple() {
+    // From ROADMAP Week 7: function Add($a, $b) { return $a + $b }; $result = Add 5 10
+    let result =
+        eval_with_cmdlets("function Add($a, $b) { return $a + $b }\n$result = Add 5 10\n$result")
+            .unwrap();
+    assert_eq!(result, Value::Number(15.0));
+}
+
+#[test]
+fn test_week7_success_criteria_with_cmdlet() {
+    // Function that calls cmdlets
+    let result = eval_with_cmdlets(
+        "function Double($x) { $result = $x * 2\nWrite-Output $result }\nDouble 21",
+    )
+    .unwrap();
+    assert_eq!(result, Value::Number(42.0));
+}
+
+#[test]
+fn test_function_with_default_and_cmdlet() {
+    let result = eval_with_cmdlets(
+        "function Greet($name = \"World\") { Write-Output \"Hello $name\" }\nGreet",
+    )
+    .unwrap();
+    assert_eq!(result, Value::String("Hello World".to_string()));
+}
