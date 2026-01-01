@@ -10,7 +10,11 @@ impl Cmdlet for SelectObjectCmdlet {
         "Select-Object"
     }
 
-    fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
+    fn execute(
+        &self,
+        context: CmdletContext,
+        _evaluator: &mut pwsh_runtime::Evaluator,
+    ) -> Result<Vec<Value>, RuntimeError> {
         let mut results = Vec::new();
 
         // Check for -First parameter (limit output)
@@ -78,7 +82,8 @@ mod tests {
         ];
         let context = CmdletContext::with_input(input)
             .with_parameter("First".to_string(), Value::Number(2.0));
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, vec![Value::Number(1.0), Value::Number(2.0)]);
     }
 
@@ -95,7 +100,8 @@ mod tests {
         let context = CmdletContext::with_input(input)
             .with_parameter("Property".to_string(), Value::String("Name".to_string()));
 
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 1);
 
         if let Value::Object(props) = &result[0] {
@@ -111,7 +117,8 @@ mod tests {
         let cmdlet = SelectObjectCmdlet;
         let input = vec![Value::Number(1.0), Value::Number(2.0)];
         let context = CmdletContext::with_input(input.clone());
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, input);
     }
 }

@@ -43,9 +43,21 @@ fn main() {
                 match parser.parse() {
                     Ok(program) => match evaluator.eval(program) {
                         Ok(value) => {
-                            // Only print non-null values
-                            if value != pwsh_runtime::Value::Null {
-                                println!("{}", value);
+                            // Handle arrays by printing each element
+                            match value {
+                                pwsh_runtime::Value::Array(items) => {
+                                    for item in items {
+                                        if item != pwsh_runtime::Value::Null {
+                                            println!("{}", item);
+                                        }
+                                    }
+                                }
+                                pwsh_runtime::Value::Null => {
+                                    // Don't print null values
+                                }
+                                _ => {
+                                    println!("{}", value);
+                                }
                             }
                         }
                         Err(e) => {

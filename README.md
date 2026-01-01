@@ -4,15 +4,19 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 
 ## 🚀 Project Status
 
-**Current Phase**: Week 10 Complete - Object System! 🎉  
-**Latest Achievement**: Hashtable creation and property access  
+**Current Phase**: Week 11 Complete - Script Blocks in Cmdlets! 🎉  
+**Latest Achievement**: Where-Object and ForEach-Object with script block support, Array literals  
 **Target 1.0**: Week 36 (Production-ready interpreter)
 
-### What Works Now (Week 10)
+### What Works Now (Week 11)
 - ✅ Complete lexer and parser
 - ✅ Runtime evaluation engine
 - ✅ Object-based pipeline execution
 - ✅ 5 core cmdlets (Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object)
+- ✅ **Script block support in cmdlets**
+- ✅ **Where-Object with filtering logic**
+- ✅ **ForEach-Object with transformation logic**
+- ✅ **Array literals (@(items))**
 - ✅ Variables and expressions
 - ✅ String interpolation
 - ✅ Control flow (if/else)
@@ -25,8 +29,8 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ Script blocks as first-class values
 - ✅ Pipeline integration with $_
 - ✅ Script block execution
-- ✅ **Hashtable creation (@{key=value})**
-- ✅ **Property access ($obj.Property)**
+- ✅ Hashtable creation (@{key=value})
+- ✅ Property access ($obj.Property)
 - ✅ Interactive REPL
 
 **Try it now:**
@@ -123,10 +127,19 @@ powershell-interpreter/
 
 **MVP Demo Script:**
 ```powershell
+# Demonstrate script blocks in cmdlets (Week 11)
+@(1,2,3,4,5) | Where-Object { $_ -gt 2 }   # 3, 4, 5
+@(1,2,3,4,5) | ForEach-Object { $_ * 2 }   # 2, 4, 6, 8, 10
+Get-Process | Where-Object { $_.CPU -gt 10 }
+
 # Demonstrate object system (Week 10)
 $person = @{Name="John"; Age=30; City="NYC"}
 $person.Name   # John
 $person.Age    # 30
+
+# Demonstrate array literals (Week 11)
+$arr = @(1, 2, 3, 4, 5)
+$arr | Write-Output
 
 # Demonstrate script blocks (Week 9)
 $filter = { $_ -gt 5 }
@@ -320,6 +333,16 @@ We welcome contributions! See our contribution guidelines:
 - [x] 94 total tests passing
 - [x] 13 new tests added
 - [x] 100% test coverage for object features
+
+### Week 11 Success - ✅ ACHIEVED  
+- [x] Array literal syntax (@(items))
+- [x] Array evaluation and unrolling in pipelines
+- [x] Where-Object with script block filtering
+- [x] ForEach-Object with script block transformation
+- [x] Script block support in cmdlets
+- [x] 96 total tests passing
+- [x] 7 new tests added
+- [x] Week 11 success criteria verified: `@(1,2,3,4,5) | Where-Object { $_ -gt 2 }` ✅
 
 ### Beta Success (Week 26)
 - [ ] 30+ cmdlets

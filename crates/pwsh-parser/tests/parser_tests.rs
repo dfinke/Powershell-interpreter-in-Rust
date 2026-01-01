@@ -636,3 +636,92 @@ fn test_parse_hashtable_assignment() {
         _ => panic!("Expected assignment"),
     }
 }
+
+#[test]
+fn test_parse_empty_array() {
+    let program = parse_str("@()").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Expression(Expression::Array(items)) => {
+            assert_eq!(items.len(), 0);
+        }
+        _ => panic!("Expected array expression"),
+    }
+}
+
+#[test]
+fn test_parse_array_single_item() {
+    let program = parse_str("@(1)").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Expression(Expression::Array(items)) => {
+            assert_eq!(items.len(), 1);
+            match &items[0] {
+                Expression::Literal(Literal::Number(n)) => assert_eq!(*n, 1.0),
+                _ => panic!("Expected number literal"),
+            }
+        }
+        _ => panic!("Expected array expression"),
+    }
+}
+
+#[test]
+fn test_parse_array_multiple_items() {
+    let program = parse_str("@(1, 2, 3)").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Expression(Expression::Array(items)) => {
+            assert_eq!(items.len(), 3);
+            for (i, item) in items.iter().enumerate() {
+                match item {
+                    Expression::Literal(Literal::Number(n)) => {
+                        assert_eq!(*n, (i + 1) as f64);
+                    }
+                    _ => panic!("Expected number literal"),
+                }
+            }
+        }
+        _ => panic!("Expected array expression"),
+    }
+}
+
+#[test]
+fn test_parse_array_assignment() {
+    let program = parse_str("$arr = @(1, 2, 3, 4, 5)").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Assignment { variable, value } => {
+            assert_eq!(variable, "arr");
+            match value {
+                Expression::Array(items) => {
+                    assert_eq!(items.len(), 5);
+                }
+                _ => panic!("Expected array expression"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
+
+#[test]
+fn test_parse_array_in_pipeline() {
+    let program = parse_str("@(1, 2, 3) | Write-Output").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Pipeline(pipeline) => {
+            assert_eq!(pipeline.stages.len(), 2);
+            match &pipeline.stages[0] {
+                Expression::Array(items) => {
+                    assert_eq!(items.len(), 3);
+                }
+                _ => panic!("Expected array expression"),
+            }
+        }
+        _ => panic!("Expected pipeline"),
+    }
+}

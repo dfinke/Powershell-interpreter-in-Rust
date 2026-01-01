@@ -9,9 +9,23 @@ impl Cmdlet for ForEachObjectCmdlet {
         "ForEach-Object"
     }
 
-    fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
-        // For Week 6, we'll implement a simple property access version
-        // Full script block support will come later when we integrate with evaluator
+    fn execute(
+        &self,
+        context: CmdletContext,
+        evaluator: &mut pwsh_runtime::Evaluator,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        // Check if we have a script block as the first positional argument
+        if let Some(Value::ScriptBlock(script_block)) = context.arguments.first() {
+            // Execute script block for each item
+            let mut results = Vec::new();
+
+            for item in context.pipeline_input {
+                // Execute the script block with $_ set to the current item
+                let result = evaluator.execute_script_block(script_block, item)?;
+                results.push(result);
+            }
+            return Ok(results);
+        }
 
         // Check if we have a -MemberName parameter (access a property)
         if let Some(member_value) = context.get_parameter("MemberName") {
@@ -30,7 +44,6 @@ impl Cmdlet for ForEachObjectCmdlet {
         }
 
         // For now, without script block support, just pass through
-        // In the future, we'll evaluate script blocks here with $_ set to each item
         Ok(context.pipeline_input)
     }
 }
@@ -45,7 +58,8 @@ mod tests {
         let cmdlet = ForEachObjectCmdlet;
         let input = vec![Value::Number(1.0), Value::Number(2.0), Value::Number(3.0)];
         let context = CmdletContext::with_input(input.clone());
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, input);
     }
 
@@ -65,7 +79,8 @@ mod tests {
         let context = CmdletContext::with_input(input)
             .with_parameter("MemberName".to_string(), Value::String("Name".to_string()));
 
-        let result = cmdlet.execute(context).unwrap();
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], Value::String("Object1".to_string()));
         assert_eq!(result[1], Value::String("Object2".to_string()));

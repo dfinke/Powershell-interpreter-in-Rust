@@ -83,7 +83,13 @@ impl<'a> PipelineExecutor<'a> {
                 } else {
                     // No pipeline input, just evaluate the expression
                     let result = evaluator.eval_expression(stage.clone())?;
-                    Ok(vec![result])
+
+                    // If the result is an array, unroll it to the pipeline
+                    if let Value::Array(items) = result {
+                        Ok(items)
+                    } else {
+                        Ok(vec![result])
+                    }
                 }
             }
         }
@@ -123,7 +129,7 @@ impl<'a> PipelineExecutor<'a> {
         context.arguments = positional_args;
 
         // Execute the cmdlet
-        cmdlet.execute(context)
+        cmdlet.execute(context, evaluator)
     }
 }
 
@@ -140,7 +146,11 @@ mod tests {
             "Test-Echo"
         }
 
-        fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
+        fn execute(
+            &self,
+            context: CmdletContext,
+            _evaluator: &mut Evaluator,
+        ) -> Result<Vec<Value>, RuntimeError> {
             if context.pipeline_input.is_empty() {
                 Ok(context.arguments)
             } else {
@@ -157,7 +167,11 @@ mod tests {
             "Test-Double"
         }
 
-        fn execute(&self, context: CmdletContext) -> Result<Vec<Value>, RuntimeError> {
+        fn execute(
+            &self,
+            context: CmdletContext,
+            _evaluator: &mut Evaluator,
+        ) -> Result<Vec<Value>, RuntimeError> {
             let mut results = Vec::new();
             for value in context.pipeline_input {
                 if let Some(n) = value.to_number() {
