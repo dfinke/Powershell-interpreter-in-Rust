@@ -107,7 +107,12 @@ impl Value {
     pub fn get_property(&self, name: &str) -> Option<Value> {
         match self {
             Value::Object(props) => {
-                // Case-insensitive property lookup
+                // Try exact match first for performance
+                if let Some(value) = props.get(name) {
+                    return Some(value.clone());
+                }
+
+                // Fall back to case-insensitive property lookup
                 let name_lower = name.to_lowercase();
                 props
                     .iter()
@@ -122,7 +127,13 @@ impl Value {
     pub fn set_property(&mut self, name: &str, value: Value) -> Result<(), String> {
         match self {
             Value::Object(props) => {
-                // Case-insensitive property update: find existing key or add new one
+                // Try exact match first for performance
+                if props.contains_key(name) {
+                    props.insert(name.to_string(), value);
+                    return Ok(());
+                }
+
+                // Fall back to case-insensitive property update: find existing key or add new one
                 let name_lower = name.to_lowercase();
                 if let Some(existing_key) = props
                     .keys()
