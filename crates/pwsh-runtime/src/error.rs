@@ -60,7 +60,10 @@ impl fmt::Display for RuntimeError {
                 write!(f, "The term '{name}' is not recognized as a cmdlet, function, or operable program")
             }
             RuntimeError::EarlyReturn(_) => {
-                write!(f, "Internal error: EarlyReturn should be handled by function call")
+                write!(
+                    f,
+                    "Internal error: EarlyReturn should be handled by function call"
+                )
             }
         }
     }

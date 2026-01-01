@@ -93,7 +93,11 @@ impl Evaluator {
                 Err(RuntimeError::EarlyReturn(value))
             }
 
-            Statement::FunctionDef { name, parameters, body } => {
+            Statement::FunctionDef {
+                name,
+                parameters,
+                body,
+            } => {
                 // Store the function as a value in the current scope
                 let func = crate::value::Function {
                     name: name.clone(),
@@ -783,10 +787,8 @@ mod tests {
 
     #[test]
     fn test_function_scope_isolation() {
-        let result = eval_str(
-            "$x = 100\nfunction Test() { $x = 1\n$x }\n$result = Test\n$result",
-        )
-        .unwrap();
+        let result =
+            eval_str("$x = 100\nfunction Test() { $x = 1\n$x }\n$result = Test\n$result").unwrap();
         assert_eq!(result, Value::Number(1.0));
     }
 
@@ -798,10 +800,9 @@ mod tests {
 
     #[test]
     fn test_function_early_return() {
-        let result = eval_str(
-            "function Test($x) { if ($x -eq 5) { return 100 }\nreturn 200 }\nTest 5",
-        )
-        .unwrap();
+        let result =
+            eval_str("function Test($x) { if ($x -eq 5) { return 100 }\nreturn 200 }\nTest 5")
+                .unwrap();
         assert_eq!(result, Value::Number(100.0));
     }
 
@@ -822,10 +823,9 @@ mod tests {
 
     #[test]
     fn test_function_with_conditional() {
-        let result = eval_str(
-            "function Max($a, $b) { if ($a -gt $b) { $a } else { $b } }\nMax 10 5",
-        )
-        .unwrap();
+        let result =
+            eval_str("function Max($a, $b) { if ($a -gt $b) { $a } else { $b } }\nMax 10 5")
+                .unwrap();
         assert_eq!(result, Value::Number(10.0));
     }
 }
