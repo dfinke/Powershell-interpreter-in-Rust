@@ -20,8 +20,8 @@ fn is_input_incomplete(input: &str) -> bool {
 
         match ch {
             '`' if !in_single_quote => escape_next = true,
-            '"' if !in_single_quote && !escape_next => in_double_quote = !in_double_quote,
-            '\'' if !in_double_quote && !escape_next => in_single_quote = !in_single_quote,
+            '"' if !in_single_quote => in_double_quote = !in_double_quote,
+            '\'' if !in_double_quote => in_single_quote = !in_single_quote,
             '{' if !in_double_quote && !in_single_quote => brace_count += 1,
             '}' if !in_double_quote && !in_single_quote => brace_count -= 1,
             '(' if !in_double_quote && !in_single_quote => paren_count += 1,
@@ -76,12 +76,16 @@ fn main() {
             io::stdout().flush().unwrap();
 
             let mut line = String::new();
-            io::stdin()
-                .read_line(&mut line)
-                .expect("Failed to read line");
-
-            accumulated_input.push('\n');
-            accumulated_input.push_str(line.trim_end());
+            match io::stdin().read_line(&mut line) {
+                Ok(_) => {
+                    accumulated_input.push('\n');
+                    accumulated_input.push_str(line.trim_end());
+                }
+                Err(e) => {
+                    eprintln!("Error reading input: {}\n", e);
+                    break;
+                }
+            }
         }
 
         // Lex, Parse, and Evaluate the input
