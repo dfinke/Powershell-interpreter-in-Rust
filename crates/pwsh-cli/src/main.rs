@@ -19,7 +19,7 @@ fn is_input_incomplete(input: &str) -> bool {
         }
 
         match ch {
-            '`' if !in_single_quote => escape_next = true,
+            '`' if !in_single_quote => escape_next = true, // Backticks escape in double quotes too
             '"' if !in_single_quote => in_double_quote = !in_double_quote,
             '\'' if !in_double_quote => in_single_quote = !in_single_quote,
             '{' if !in_double_quote && !in_single_quote => brace_count += 1,
@@ -71,6 +71,7 @@ fn main() {
 
         // Accumulate multiline input if needed
         let mut accumulated_input = input.to_string();
+        let mut read_error = false;
         while is_input_incomplete(&accumulated_input) {
             print!(">> ");
             io::stdout().flush().unwrap();
@@ -83,9 +84,15 @@ fn main() {
                 }
                 Err(e) => {
                     eprintln!("Error reading input: {}\n", e);
+                    read_error = true;
                     break;
                 }
             }
+        }
+
+        // Skip processing if there was a read error
+        if read_error {
+            continue;
         }
 
         // Lex, Parse, and Evaluate the input
