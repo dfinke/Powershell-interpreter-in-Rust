@@ -145,7 +145,7 @@ impl ScopeStack {
         if let Some(colon_pos) = name.find(':') {
             let (qualifier, rest) = name.split_at(colon_pos);
             let base_name = &rest[1..]; // Skip the ':'
-            
+
             // Only recognize valid scope qualifiers
             match qualifier.to_lowercase().as_str() {
                 "global" | "local" | "script" => (Some(qualifier), base_name),
@@ -160,7 +160,7 @@ impl ScopeStack {
     /// Supports $global:x, $local:y, $script:z
     pub fn get_variable_qualified(&self, name: &str) -> Option<Value> {
         let (qualifier, base_name) = Self::parse_scope_qualifier(name);
-        
+
         match qualifier {
             Some("global") => {
                 // Get from global scope (first scope)
@@ -186,7 +186,7 @@ impl ScopeStack {
     /// Supports $global:x = value, $local:y = value, $script:z = value
     pub fn set_variable_qualified(&mut self, name: &str, value: Value) {
         let (qualifier, base_name) = Self::parse_scope_qualifier(name);
-        
+
         match qualifier {
             Some("global") => {
                 // Set in global scope (first scope)
@@ -330,52 +330,67 @@ mod tests {
     #[test]
     fn test_global_scope_qualifier() {
         let mut stack = ScopeStack::new();
-        
+
         // Set in global scope
         stack.set_variable_qualified("global:x", Value::Number(5.0));
-        assert_eq!(stack.get_variable_qualified("global:x"), Some(Value::Number(5.0)));
-        
+        assert_eq!(
+            stack.get_variable_qualified("global:x"),
+            Some(Value::Number(5.0))
+        );
+
         // Push new scope
         stack.push_scope();
-        
+
         // Global variable accessible from inner scope
-        assert_eq!(stack.get_variable_qualified("global:x"), Some(Value::Number(5.0)));
-        
+        assert_eq!(
+            stack.get_variable_qualified("global:x"),
+            Some(Value::Number(5.0))
+        );
+
         // Update global variable from inner scope
         stack.set_variable_qualified("global:x", Value::Number(10.0));
-        
+
         // Pop scope
         stack.pop_scope();
-        
+
         // Global variable was updated
-        assert_eq!(stack.get_variable_qualified("global:x"), Some(Value::Number(10.0)));
+        assert_eq!(
+            stack.get_variable_qualified("global:x"),
+            Some(Value::Number(10.0))
+        );
     }
 
     #[test]
     fn test_local_scope_qualifier() {
         let mut stack = ScopeStack::new();
-        
+
         // Set in global scope
         stack.set_variable("x", Value::Number(1.0));
-        
+
         // Push new scope
         stack.push_scope();
-        
+
         // Set local variable (in current scope)
         stack.set_variable_qualified("local:x", Value::Number(2.0));
-        
+
         // Local access returns the local value
-        assert_eq!(stack.get_variable_qualified("local:x"), Some(Value::Number(2.0)));
-        
+        assert_eq!(
+            stack.get_variable_qualified("local:x"),
+            Some(Value::Number(2.0))
+        );
+
         // Global access returns the global value
-        assert_eq!(stack.get_variable_qualified("global:x"), Some(Value::Number(1.0)));
-        
+        assert_eq!(
+            stack.get_variable_qualified("global:x"),
+            Some(Value::Number(1.0))
+        );
+
         // Regular access returns the local (shadowing) value
         assert_eq!(stack.get_variable("x"), Some(Value::Number(2.0)));
-        
+
         // Pop scope
         stack.pop_scope();
-        
+
         // Back to global value
         assert_eq!(stack.get_variable("x"), Some(Value::Number(1.0)));
     }
@@ -383,56 +398,74 @@ mod tests {
     #[test]
     fn test_script_scope_qualifier() {
         let mut stack = ScopeStack::new();
-        
+
         // Script scope currently behaves like global scope
         stack.set_variable_qualified("script:z", Value::Number(100.0));
-        assert_eq!(stack.get_variable_qualified("script:z"), Some(Value::Number(100.0)));
-        assert_eq!(stack.get_variable_qualified("global:z"), Some(Value::Number(100.0)));
+        assert_eq!(
+            stack.get_variable_qualified("script:z"),
+            Some(Value::Number(100.0))
+        );
+        assert_eq!(
+            stack.get_variable_qualified("global:z"),
+            Some(Value::Number(100.0))
+        );
     }
 
     #[test]
     fn test_scope_qualifier_parsing() {
         let mut stack = ScopeStack::new();
-        
+
         // Test that scope qualifiers are case-insensitive
         stack.set_variable_qualified("GLOBAL:upper", Value::Number(1.0));
-        assert_eq!(stack.get_variable_qualified("global:upper"), Some(Value::Number(1.0)));
-        
+        assert_eq!(
+            stack.get_variable_qualified("global:upper"),
+            Some(Value::Number(1.0))
+        );
+
         stack.set_variable_qualified("Global:mixed", Value::Number(2.0));
-        assert_eq!(stack.get_variable_qualified("global:mixed"), Some(Value::Number(2.0)));
+        assert_eq!(
+            stack.get_variable_qualified("global:mixed"),
+            Some(Value::Number(2.0))
+        );
     }
 
     #[test]
     fn test_invalid_scope_qualifier() {
         let mut stack = ScopeStack::new();
-        
+
         // Invalid qualifier should be treated as part of the variable name
         stack.set_variable_qualified("invalid:name", Value::Number(42.0));
-        
+
         // Should be stored as "invalid:name" (whole string)
-        assert_eq!(stack.get_variable("invalid:name"), Some(Value::Number(42.0)));
+        assert_eq!(
+            stack.get_variable("invalid:name"),
+            Some(Value::Number(42.0))
+        );
     }
 
     #[test]
     fn test_scope_qualifier_with_nested_scopes() {
         let mut stack = ScopeStack::new();
-        
+
         // Set global variable
         stack.set_variable_qualified("global:counter", Value::Number(0.0));
-        
+
         // Push scope and increment
         stack.push_scope();
         stack.set_variable_qualified("global:counter", Value::Number(1.0));
-        
+
         // Push another scope and increment
         stack.push_scope();
         stack.set_variable_qualified("global:counter", Value::Number(2.0));
-        
+
         // Pop both scopes
         stack.pop_scope();
         stack.pop_scope();
-        
+
         // Global variable has final value
-        assert_eq!(stack.get_variable_qualified("global:counter"), Some(Value::Number(2.0)));
+        assert_eq!(
+            stack.get_variable_qualified("global:counter"),
+            Some(Value::Number(2.0))
+        );
     }
 }

@@ -395,7 +395,10 @@ fn test_tokenize_scope_qualified_assignment() {
     let mut lexer = Lexer::new("$global:counter = 100");
     let tokens = lexer.tokenize().unwrap();
     assert_eq!(tokens.len(), 4); // Variable, =, Number, Eof
-    assert_eq!(tokens[0].token, Token::Variable("global:counter".to_string()));
+    assert_eq!(
+        tokens[0].token,
+        Token::Variable("global:counter".to_string())
+    );
     assert_eq!(tokens[1].token, Token::Assignment);
     assert_eq!(tokens[2].token, Token::Number(100.0));
 }

@@ -308,9 +308,10 @@ impl Evaluator {
         match expr {
             Expression::Literal(lit) => self.eval_literal(lit),
 
-            Expression::Variable(name) => {
-                Ok(self.scope.get_variable_qualified(&name).unwrap_or(Value::Number(0.0)))
-            }
+            Expression::Variable(name) => Ok(self
+                .scope
+                .get_variable_qualified(&name)
+                .unwrap_or(Value::Number(0.0))),
 
             Expression::BinaryOp {
                 left,
