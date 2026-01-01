@@ -125,3 +125,45 @@ fn test_function_with_default_and_cmdlet() {
     .unwrap();
     assert_eq!(result, Value::String("Hello World".to_string()));
 }
+
+#[test]
+fn test_case_insensitive_function_calls() {
+    // Test that function names are case-insensitive
+    let result = eval_with_cmdlets("function Add($a, $b) { return $a + $b }\nadd 5 10").unwrap();
+    assert_eq!(result, Value::Number(15.0));
+}
+
+#[test]
+fn test_case_insensitive_cmdlet_calls() {
+    // Test that cmdlet names are case-insensitive
+    let result = eval_with_cmdlets("write-output 42").unwrap();
+    assert_eq!(result, Value::Number(42.0));
+
+    let result2 = eval_with_cmdlets("WRITE-OUTPUT 42").unwrap();
+    assert_eq!(result2, Value::Number(42.0));
+}
+
+#[test]
+fn test_case_insensitive_string_comparison() {
+    // Test that string comparisons are case-insensitive by default
+    let result = eval_with_cmdlets("\"hello\" -eq \"HELLO\"").unwrap();
+    assert_eq!(result, Value::Boolean(true));
+
+    let result2 = eval_with_cmdlets("\"PowerShell\" -eq \"powershell\"").unwrap();
+    assert_eq!(result2, Value::Boolean(true));
+}
+
+#[test]
+fn test_case_insensitive_comprehensive() {
+    // Comprehensive test combining all case-insensitive features
+    let code = r#"
+        function Multiply($x, $y) { return $x * $y }
+        $MyVar = 10
+        $result = MULTIPLY $myvar 2
+        if ("TEST" -eq "test") {
+            WRITE-OUTPUT $RESULT
+        }
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+    assert_eq!(result, Value::Number(20.0));
+}

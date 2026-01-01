@@ -484,13 +484,14 @@ impl Evaluator {
         Ok(Value::Boolean(f(l, r)))
     }
 
-    /// Check if two values are equal
+    /// Check if two values are equal (case-insensitive for strings, PowerShell default)
     fn values_equal(&self, left: &Value, right: &Value) -> bool {
         match (left, right) {
             (Value::Null, Value::Null) => true,
             (Value::Boolean(l), Value::Boolean(r)) => l == r,
             (Value::Number(l), Value::Number(r)) => l == r,
-            (Value::String(l), Value::String(r)) => l == r,
+            // PowerShell string comparison is case-insensitive by default
+            (Value::String(l), Value::String(r)) => l.to_lowercase() == r.to_lowercase(),
             _ => false,
         }
     }
@@ -827,5 +828,45 @@ mod tests {
             eval_str("function Max($a, $b) { if ($a -gt $b) { $a } else { $b } }\nMax 10 5")
                 .unwrap();
         assert_eq!(result, Value::Number(10.0));
+    }
+
+    #[test]
+    fn test_function_call_case_insensitive() {
+        // PowerShell is case-insensitive
+        let result = eval_str("function Add($a, $b) { $a + $b }\nadd 5 10").unwrap();
+        assert_eq!(result, Value::Number(15.0));
+    }
+
+    #[test]
+    fn test_function_call_mixed_case() {
+        // Test with mixed case variations
+        let result = eval_str("function MyFunc($x) { $x * 2 }\nmYfUnC 21").unwrap();
+        assert_eq!(result, Value::Number(42.0));
+    }
+
+    #[test]
+    fn test_string_comparison_case_insensitive() {
+        // PowerShell string comparisons are case-insensitive by default
+        let result = eval_str("\"hello\" -eq \"HELLO\"").unwrap();
+        assert_eq!(result, Value::Boolean(true));
+    }
+
+    #[test]
+    fn test_string_comparison_mixed_case() {
+        let result = eval_str("\"PowerShell\" -eq \"powershell\"").unwrap();
+        assert_eq!(result, Value::Boolean(true));
+    }
+
+    #[test]
+    fn test_string_not_equal_case_insensitive() {
+        let result = eval_str("\"hello\" -ne \"WORLD\"").unwrap();
+        assert_eq!(result, Value::Boolean(true));
+    }
+
+    #[test]
+    fn test_variable_case_insensitive() {
+        // Variables should also be case-insensitive
+        let result = eval_str("$MyVar = 42\n$myvar").unwrap();
+        assert_eq!(result, Value::Number(42.0));
     }
 }
