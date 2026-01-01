@@ -141,14 +141,16 @@ impl ScopeStack {
 
     /// Parse a variable name into scope qualifier and base name
     /// Returns (scope_qualifier, base_name) where scope_qualifier is Some("global"|"local"|"script") or None
-    fn parse_scope_qualifier(name: &str) -> (Option<&str>, &str) {
+    /// The qualifier is normalized to lowercase for consistent matching
+    fn parse_scope_qualifier(name: &str) -> (Option<String>, &str) {
         if let Some(colon_pos) = name.find(':') {
             let (qualifier, rest) = name.split_at(colon_pos);
             let base_name = &rest[1..]; // Skip the ':'
+            let qualifier_lower = qualifier.to_lowercase();
 
             // Only recognize valid scope qualifiers
-            match qualifier.to_lowercase().as_str() {
-                "global" | "local" | "script" => (Some(qualifier), base_name),
+            match qualifier_lower.as_str() {
+                "global" | "local" | "script" => (Some(qualifier_lower), base_name),
                 _ => (None, name), // Invalid qualifier, treat as regular variable name
             }
         } else {
@@ -161,7 +163,7 @@ impl ScopeStack {
     pub fn get_variable_qualified(&self, name: &str) -> Option<Value> {
         let (qualifier, base_name) = Self::parse_scope_qualifier(name);
 
-        match qualifier {
+        match qualifier.as_deref() {
             Some("global") => {
                 // Get from global scope (first scope)
                 self.scopes.first()?.get(base_name).cloned()
@@ -187,7 +189,7 @@ impl ScopeStack {
     pub fn set_variable_qualified(&mut self, name: &str, value: Value) {
         let (qualifier, base_name) = Self::parse_scope_qualifier(name);
 
-        match qualifier {
+        match qualifier.as_deref() {
             Some("global") => {
                 // Set in global scope (first scope)
                 if let Some(global_scope) = self.scopes.first_mut() {
