@@ -90,14 +90,19 @@ $Global:debug = true
 Write-Output "Debug (Global): $GLOBAL:debug"
 
 # ===================================
-# Example 8: Mixed Scope Operations
+# Example 8: Mixed Scope Operations in Functions
 # ===================================
 $global:a = 1
-$local:b = 2
-$script:c = 3
 
-$sum = $global:a + $local:b + $script:c
-Write-Output "Sum of different scopes: $sum"
+function MixedScopes {
+    $local:b = 2
+    $script:c = 3
+    
+    $sum = $global:a + $local:b + $script:c
+    Write-Output "Sum of different scopes: $sum"
+}
+
+MixedScopes
 
 # ===================================
 # Example 9: Shadowing with Local Scope

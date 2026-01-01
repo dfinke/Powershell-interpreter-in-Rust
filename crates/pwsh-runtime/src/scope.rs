@@ -145,6 +145,13 @@ impl ScopeStack {
     fn parse_scope_qualifier(name: &str) -> (Option<String>, &str) {
         if let Some(colon_pos) = name.find(':') {
             let (qualifier, rest) = name.split_at(colon_pos);
+
+            // Ensure there's a base name after the colon
+            if rest.len() <= 1 {
+                // No base name (e.g., "global:"), treat as regular variable name
+                return (None, name);
+            }
+
             let base_name = &rest[1..]; // Skip the ':'
             let qualifier_lower = qualifier.to_lowercase();
 
@@ -443,6 +450,10 @@ mod tests {
             stack.get_variable("invalid:name"),
             Some(Value::Number(42.0))
         );
+
+        // Edge case: qualifier without base name should be treated as regular variable
+        stack.set_variable_qualified("global:", Value::Number(99.0));
+        assert_eq!(stack.get_variable("global:"), Some(Value::Number(99.0)));
     }
 
     #[test]
