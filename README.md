@@ -4,11 +4,11 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 
 ## 🚀 Project Status
 
-**Current Phase**: Week 7 Complete - Functions Implemented! 🎉  
-**Latest Achievement**: User-defined functions with parameter binding and return statements  
+**Current Phase**: Week 8 Complete - Advanced Scoping! 🎉  
+**Latest Achievement**: Scope qualifiers ($global:, $local:, $script:) for explicit scope control  
 **Target 1.0**: Week 36 (Production-ready interpreter)
 
-### What Works Now (Week 7)
+### What Works Now (Week 8)
 - ✅ Complete lexer and parser
 - ✅ Runtime evaluation engine
 - ✅ Object-based pipeline execution
@@ -16,9 +16,12 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ Variables and expressions
 - ✅ String interpolation
 - ✅ Control flow (if/else)
-- ✅ **User-defined functions**
-- ✅ **Parameter binding with defaults**
-- ✅ **Return statements**
+- ✅ User-defined functions
+- ✅ Parameter binding with defaults
+- ✅ Return statements
+- ✅ **Scope qualifiers ($global:, $local:, $script:)**
+- ✅ **Advanced scope management**
+- ✅ **Closures (basic)**
 - ✅ Interactive REPL
 
 **Try it now:**
@@ -115,6 +118,14 @@ powershell-interpreter/
 
 **MVP Demo Script:**
 ```powershell
+# Demonstrate scope qualifiers (Week 8)
+$global:x = 5
+function Test {
+    $local:y = 10
+    $x + $y
+}
+Test  # Returns 15
+
 # Demonstrate functions (Week 7)
 function Add($a, $b) {
     return $a + $b
@@ -149,6 +160,7 @@ $selected | ForEach-Object { Write-Output "$($_.Name): $($_.CPU)" }
 ### Phase 2: Functions & Scope (Weeks 7-9)
 - Function definitions, parameter binding, closures
 - **Week 7 Complete** ✅
+- **Week 8 Complete** ✅
 
 ### Phase 3: Object Pipeline (Weeks 10-14)
 - Object system, core cmdlets, full pipeline
@@ -266,6 +278,14 @@ We welcome contributions! See our contribution guidelines:
 - [x] Return statements
 - [x] 156 total tests passing
 - [x] 100% test coverage for functions
+
+### Week 8 Success - ✅ ACHIEVED
+- [x] Scope qualifiers ($global:, $local:, $script:) working
+- [x] Advanced scope management
+- [x] Closures (basic) functioning
+- [x] 186 total tests passing
+- [x] 22 new tests added
+- [x] 100% test coverage for scope features
 
 ### Beta Success (Week 26)
 - [ ] 30+ cmdlets

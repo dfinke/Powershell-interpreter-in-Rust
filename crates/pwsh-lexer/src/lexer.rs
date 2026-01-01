@@ -262,6 +262,7 @@ impl Lexer {
     }
 
     /// Read a variable name (after $)
+    /// Supports scope qualifiers like $global:x, $local:y, $script:z
     fn read_variable(&mut self) -> Result<String, LexError> {
         let start_pos = self.current_position();
         self.advance(); // consume $
@@ -269,7 +270,7 @@ impl Lexer {
         let mut var_name = String::new();
 
         while let Some(ch) = self.peek() {
-            if ch.is_alphanumeric() || ch == '_' {
+            if ch.is_alphanumeric() || ch == '_' || ch == ':' {
                 var_name.push(ch);
                 self.advance();
             } else {
