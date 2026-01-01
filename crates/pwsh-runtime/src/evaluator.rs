@@ -174,12 +174,10 @@ impl Evaluator {
         input: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
         // First, check if this is a user-defined function
-        if let Some(func_value) = self.scope.get_variable(name) {
-            if let Value::Function(func) = func_value {
-                // Call the user-defined function
-                let result = self.call_function(&func, arguments)?;
-                return Ok(vec![result]);
-            }
+        if let Some(Value::Function(func)) = self.scope.get_variable(name) {
+            // Call the user-defined function
+            let result = self.call_function(&func, arguments)?;
+            return Ok(vec![result]);
         }
 
         // If not a function, try cmdlets
