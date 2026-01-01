@@ -19,7 +19,8 @@ fn is_input_incomplete(input: &str) -> bool {
         }
 
         match ch {
-            '\\' if !in_single_quote => escape_next = true, // Backslash escapes in double quotes too
+            // Backslash only escapes within strings (matching lexer behavior)
+            '\\' if in_double_quote || in_single_quote => escape_next = true,
             '"' if !in_single_quote => in_double_quote = !in_double_quote,
             '\'' if !in_double_quote => in_single_quote = !in_single_quote,
             '{' if !in_double_quote && !in_single_quote => brace_count += 1,
@@ -79,8 +80,10 @@ fn main() {
             let mut line = String::new();
             match io::stdin().read_line(&mut line) {
                 Ok(_) => {
+                    // Only remove line endings, preserve other trailing whitespace
+                    let line_content = line.trim_end_matches('\n').trim_end_matches('\r');
                     accumulated_input.push('\n');
-                    accumulated_input.push_str(line.trim_end());
+                    accumulated_input.push_str(line_content);
                 }
                 Err(e) => {
                     eprintln!("Error reading input: {}", e);
