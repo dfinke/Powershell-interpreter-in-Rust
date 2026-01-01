@@ -15,18 +15,16 @@ impl Cmdlet for ForEachObjectCmdlet {
         evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
         // Check if we have a script block as the first positional argument
-        if let Some(first_arg) = context.arguments.first() {
-            if let Value::ScriptBlock(script_block) = first_arg {
-                // Execute script block for each item
-                let mut results = Vec::new();
+        if let Some(Value::ScriptBlock(script_block)) = context.arguments.first() {
+            // Execute script block for each item
+            let mut results = Vec::new();
 
-                for item in context.pipeline_input {
-                    // Execute the script block with $_ set to the current item
-                    let result = evaluator.execute_script_block(script_block, item)?;
-                    results.push(result);
-                }
-                return Ok(results);
+            for item in context.pipeline_input {
+                // Execute the script block with $_ set to the current item
+                let result = evaluator.execute_script_block(script_block, item)?;
+                results.push(result);
             }
+            return Ok(results);
         }
 
         // Check if we have a -MemberName parameter (access a property)

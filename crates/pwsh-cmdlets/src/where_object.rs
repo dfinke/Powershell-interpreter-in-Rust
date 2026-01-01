@@ -15,23 +15,21 @@ impl Cmdlet for WhereObjectCmdlet {
         evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
         // Check if we have a script block as the first positional argument
-        if let Some(first_arg) = context.arguments.first() {
-            if let Value::ScriptBlock(script_block) = first_arg {
-                // Filter using script block
-                let mut results = Vec::new();
+        if let Some(Value::ScriptBlock(script_block)) = context.arguments.first() {
+            // Filter using script block
+            let mut results = Vec::new();
 
-                for item in context.pipeline_input {
-                    // Execute the script block with $_ set to the current item
-                    // We clone here because execute_script_block takes ownership
-                    let result = evaluator.execute_script_block(script_block, item.clone())?;
+            for item in context.pipeline_input {
+                // Execute the script block with $_ set to the current item
+                // We clone here because execute_script_block takes ownership
+                let result = evaluator.execute_script_block(script_block, item.clone())?;
 
-                    // If the result is truthy, include the item
-                    if result.to_bool() {
-                        results.push(item);
-                    }
+                // If the result is truthy, include the item
+                if result.to_bool() {
+                    results.push(item);
                 }
-                return Ok(results);
             }
+            return Ok(results);
         }
 
         // Check if we have a -Property parameter (simple name match)
