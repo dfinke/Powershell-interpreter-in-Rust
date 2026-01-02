@@ -179,11 +179,11 @@ fn test_week12_select_object_properties() {
         $procs | Select-Object -Property @("Name", "CPU")
     "#;
     let result = eval_with_cmdlets(code).unwrap();
-    
+
     // Result should be an array
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 2);
-        
+
         // Each item should be an object with only Name and CPU
         for item in items {
             if let Value::Object(props) = item {
@@ -212,7 +212,7 @@ fn test_week12_select_object_first() {
         $procs | Select-Object -First 2
     "#;
     let result = eval_with_cmdlets(code).unwrap();
-    
+
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 2);
     } else {
@@ -228,7 +228,7 @@ fn test_week12_select_object_last() {
         $nums | Select-Object -Last 2
     "#;
     let result = eval_with_cmdlets(code).unwrap();
-    
+
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 2);
         assert_eq!(items[0], Value::Number(4.0));
@@ -250,10 +250,10 @@ fn test_week12_combined_property_and_first() {
         $procs | Select-Object -Property @("Name", "CPU") -First 2
     "#;
     let result = eval_with_cmdlets(code).unwrap();
-    
+
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 2);
-        
+
         // Each item should have only Name and CPU
         for item in items {
             if let Value::Object(props) = item {

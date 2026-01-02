@@ -74,7 +74,7 @@ impl Cmdlet for SelectObjectCmdlet {
             if let Some(count) = last_value.to_number() {
                 let limit = count as usize;
                 let total = input.len();
-                let skip = if total > limit { total - limit } else { 0 };
+                let skip = total.saturating_sub(limit);
                 return Ok(input.into_iter().skip(skip).collect());
             }
         }
@@ -149,8 +149,8 @@ mod tests {
             Value::Number(4.0),
             Value::Number(5.0),
         ];
-        let context = CmdletContext::with_input(input)
-            .with_parameter("Last".to_string(), Value::Number(2.0));
+        let context =
+            CmdletContext::with_input(input).with_parameter("Last".to_string(), Value::Number(2.0));
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, vec![Value::Number(4.0), Value::Number(5.0)]);
@@ -243,10 +243,7 @@ mod tests {
         // Verify objects only have Name property
         if let Value::Object(props) = &result[0] {
             assert_eq!(props.len(), 1);
-            assert_eq!(
-                props.get("Name"),
-                Some(&Value::String("Test1".to_string()))
-            );
+            assert_eq!(props.get("Name"), Some(&Value::String("Test1".to_string())));
         } else {
             panic!("Expected object result");
         }
