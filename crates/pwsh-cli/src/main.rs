@@ -62,7 +62,7 @@ struct PowerShellHighlighter;
 impl Highlighter for PowerShellHighlighter {
     fn highlight(&self, line: &str, _cursor: usize) -> StyledText {
         let mut styled_text = StyledText::new();
-        
+
         // Simple keyword-based highlighter for the REPL
         // We split by whitespace but keep track of where we are to preserve spacing
         let words = line.split_inclusive(|c: char| c.is_whitespace() || "{}()|;=.".contains(c));
@@ -73,10 +73,19 @@ impl Highlighter for PowerShellHighlighter {
                 Style::new()
             } else {
                 match trimmed.to_lowercase().as_str() {
-                    "if" | "else" | "elseif" | "function" | "return" => Style::new().fg(Color::Magenta).bold(),
+                    "if" | "else" | "elseif" | "function" | "return" => {
+                        Style::new().fg(Color::Magenta).bold()
+                    }
                     w if w.starts_with('$') => Style::new().fg(Color::Cyan),
-                    w if w.starts_with('-') && w.len() > 1 && w.chars().nth(1).unwrap().is_alphabetic() => Style::new().fg(Color::Yellow),
-                    "{" | "}" | "(" | ")" | "|" | ";" | "=" | "." => Style::new().fg(Color::LightGray),
+                    w if w.starts_with('-')
+                        && w.len() > 1
+                        && w.chars().nth(1).unwrap().is_alphabetic() =>
+                    {
+                        Style::new().fg(Color::Yellow)
+                    }
+                    "{" | "}" | "(" | ")" | "|" | ";" | "=" | "." => {
+                        Style::new().fg(Color::LightGray)
+                    }
                     _ => Style::new().fg(Color::White),
                 }
             };
@@ -109,7 +118,10 @@ impl Prompt for PowerShellPrompt {
         Cow::Borrowed(">> ")
     }
 
-    fn render_prompt_history_search_indicator(&self, history_search: PromptHistorySearch) -> Cow<'_, str> {
+    fn render_prompt_history_search_indicator(
+        &self,
+        history_search: PromptHistorySearch,
+    ) -> Cow<'_, str> {
         Cow::Owned(format!("(search: {})", history_search.term))
     }
 }

@@ -212,7 +212,7 @@ mod tests {
         assert!(obj
             .set_property("Name", Value::String("test".to_string()))
             .is_ok());
-        
+
         // Should retrieve with different case variations
         assert_eq!(
             obj.get_property("name"),
@@ -233,10 +233,10 @@ mod tests {
         let mut obj = Value::Object(HashMap::new());
         // Set property with specific case
         obj.set_property("Age", Value::Number(30.0)).unwrap();
-        
+
         // Update with different case should preserve original key
         obj.set_property("age", Value::Number(31.0)).unwrap();
-        
+
         // Should still have only one key (the original)
         if let Value::Object(map) = &obj {
             assert_eq!(map.len(), 1);
@@ -244,9 +244,8 @@ mod tests {
         } else {
             panic!("Expected Object");
         }
-        
+
         // Value should be updated
         assert_eq!(obj.get_property("age"), Some(Value::Number(31.0)));
     }
-
 }

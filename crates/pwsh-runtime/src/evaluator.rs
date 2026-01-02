@@ -1267,7 +1267,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result, Value::Number(30.0));
-        
+
         // Test with different case variations
         let result2 = eval_str(
             r#"
@@ -1277,7 +1277,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result2, Value::Number(30.0));
-        
+
         // Test name with different case
         let result3 = eval_str(
             r#"
