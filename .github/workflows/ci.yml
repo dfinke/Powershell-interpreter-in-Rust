@@ -68,10 +68,10 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-    
-    - name: Install tarpaulin
-      run: cargo install cargo-tarpaulin
-    
+
+    - name: Install Tarpaulin (Binary)
+      uses: taiki-e/install-action@cargo-tarpaulin
+
     - name: Generate coverage
       run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
     
