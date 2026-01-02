@@ -167,3 +167,103 @@ fn test_case_insensitive_comprehensive() {
     let result = eval_with_cmdlets(code).unwrap();
     assert_eq!(result, Value::Number(20.0));
 }
+
+#[test]
+fn test_week12_select_object_properties() {
+    // Test selecting specific properties from objects
+    let code = r#"
+        $procs = @(
+            @{Name="chrome"; CPU=45.2; Id=5678}
+            @{Name="code"; CPU=23.1; Id=9012}
+        )
+        $procs | Select-Object -Property @("Name", "CPU")
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    // Result should be an array
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+
+        // Each item should be an object with only Name and CPU
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 2);
+                assert!(props.contains_key("Name"));
+                assert!(props.contains_key("CPU"));
+                assert!(!props.contains_key("Id"));
+            } else {
+                panic!("Expected object in array");
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
+
+#[test]
+fn test_week12_select_object_first() {
+    // Test selecting first N items
+    let code = r#"
+        $procs = @(
+            @{Name="chrome"; CPU=45.2}
+            @{Name="code"; CPU=23.1}
+            @{Name="pwsh"; CPU=5.0}
+        )
+        $procs | Select-Object -First 2
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+    } else {
+        panic!("Expected array result");
+    }
+}
+
+#[test]
+fn test_week12_select_object_last() {
+    // Test selecting last N items
+    let code = r#"
+        $nums = @(1, 2, 3, 4, 5)
+        $nums | Select-Object -Last 2
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0], Value::Number(4.0));
+        assert_eq!(items[1], Value::Number(5.0));
+    } else {
+        panic!("Expected array result");
+    }
+}
+
+#[test]
+fn test_week12_combined_property_and_first() {
+    // Test combining property selection with -First
+    let code = r#"
+        $procs = @(
+            @{Name="chrome"; CPU=45.2; Id=5678}
+            @{Name="code"; CPU=23.1; Id=9012}
+            @{Name="pwsh"; CPU=5.0; Id=3456}
+        )
+        $procs | Select-Object -Property @("Name", "CPU") -First 2
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+
+        // Each item should have only Name and CPU
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 2);
+                assert!(props.contains_key("Name"));
+                assert!(props.contains_key("CPU"));
+                assert!(!props.contains_key("Id"));
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
