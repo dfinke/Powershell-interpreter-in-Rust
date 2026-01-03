@@ -89,18 +89,21 @@ impl Completer for PowerShellCompleter {
 
         let partial = &line[start..pos];
 
-        // Skip completion for very short inputs
-        if partial.len() < 2 {
-            return vec![];
-        }
-
         let partial_lower = partial.to_lowercase();
 
         // Find matching commands (case-insensitive)
+        // If partial is empty, return all commands
+        // Otherwise, filter by prefix match
         let mut completions: Vec<Suggestion> = self
             .commands
             .iter()
-            .filter(|cmd| cmd.to_lowercase().starts_with(&partial_lower))
+            .filter(|cmd| {
+                if partial.is_empty() {
+                    true
+                } else {
+                    cmd.to_lowercase().starts_with(&partial_lower)
+                }
+            })
             .map(|cmd| Suggestion {
                 value: cmd.clone(),
                 description: None,
@@ -352,9 +355,20 @@ mod tests {
         assert_eq!(completions.len(), 1);
         assert_eq!(completions[0].value, "Select-Object");
 
-        // Test that single character doesn't complete
+        // Test that single character now completes
         let completions = completer.complete("s", 1);
-        assert_eq!(completions.len(), 0);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Select-Object");
+        
+        // Test empty partial after pipe shows all commands
+        let completions = completer.complete("1 | ", 4);
+        assert_eq!(completions.len(), 5);
+        // Verify they are sorted
+        assert_eq!(completions[0].value, "ForEach-Object");
+        assert_eq!(completions[1].value, "Get-Process");
+        assert_eq!(completions[2].value, "Select-Object");
+        assert_eq!(completions[3].value, "Where-Object");
+        assert_eq!(completions[4].value, "Write-Output");
     }
 
     #[test]
@@ -368,8 +382,10 @@ mod tests {
 
         // Test "w" prefix should match both Write-Output and Where-Object
         let completions = completer.complete("w", 1);
-        // Should be empty because min length is 2
-        assert_eq!(completions.len(), 0);
+        // Should now return both matches
+        assert_eq!(completions.len(), 2);
+        assert_eq!(completions[0].value, "Where-Object");
+        assert_eq!(completions[1].value, "Write-Output");
 
         // Test "wr" should match Write-Output
         let completions = completer.complete("wr", 2);
