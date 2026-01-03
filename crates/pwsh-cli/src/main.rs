@@ -74,7 +74,7 @@ impl Completer for PowerShellCompleter {
         // Find the start of the current word by scanning backwards
         let bytes_before = &line.as_bytes()[..pos];
         let mut start = pos;
-        
+
         // Scan backwards through byte positions to find word boundary
         for (i, &byte) in bytes_before.iter().enumerate().rev() {
             let c = byte as char;
@@ -88,14 +88,14 @@ impl Completer for PowerShellCompleter {
         }
 
         let partial = &line[start..pos];
-        
+
         // Skip completion for very short inputs
         if partial.len() < 2 {
             return vec![];
         }
 
         let partial_lower = partial.to_lowercase();
-        
+
         // Find matching commands (case-insensitive)
         let mut completions: Vec<Suggestion> = self
             .commands
@@ -112,7 +112,7 @@ impl Completer for PowerShellCompleter {
 
         // Sort completions for consistent ordering
         completions.sort_by(|a, b| a.value.cmp(&b.value));
-        
+
         completions
     }
 }
@@ -351,7 +351,7 @@ mod tests {
         let completions = completer.complete("$a | select", 11);
         assert_eq!(completions.len(), 1);
         assert_eq!(completions[0].value, "Select-Object");
-        
+
         // Test that single character doesn't complete
         let completions = completer.complete("s", 1);
         assert_eq!(completions.len(), 0);
@@ -382,4 +382,3 @@ mod tests {
         assert_eq!(completions[0].value, "Where-Object");
     }
 }
-
