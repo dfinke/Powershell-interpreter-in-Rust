@@ -15,7 +15,7 @@ impl Cmdlet for GetProcessCmdlet {
         context: CmdletContext,
         _evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
-        // For Week 6 MVP, we'll create mock process data
+        // For now, we use mock process data for demonstration
         // In a production implementation, this would read from the OS
 
         let mock_processes = create_mock_processes();
