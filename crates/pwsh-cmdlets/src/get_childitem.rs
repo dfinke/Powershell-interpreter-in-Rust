@@ -55,7 +55,6 @@ impl Cmdlet for GetChildItemCmdlet {
 mod tests {
     use super::*;
     use std::fs::{self, File};
-    use std::path::PathBuf;
     use tempfile::TempDir;
 
     #[test]

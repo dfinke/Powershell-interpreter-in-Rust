@@ -55,11 +55,13 @@ jobs:
       run: cargo test --verbose
     
     - name: Build release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
       run: cargo build --release --verbose
 
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
     permissions:
       contents: read
     
