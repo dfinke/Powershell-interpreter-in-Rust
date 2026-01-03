@@ -359,7 +359,7 @@ mod tests {
         let completions = completer.complete("s", 1);
         assert_eq!(completions.len(), 1);
         assert_eq!(completions[0].value, "Select-Object");
-        
+
         // Test empty partial after pipe shows all commands
         let completions = completer.complete("1 | ", 4);
         assert_eq!(completions.len(), 5);
