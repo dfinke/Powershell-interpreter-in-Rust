@@ -4,11 +4,29 @@
 
 This roadmap provides a detailed, week-by-week plan for implementing a PowerShell interpreter in Rust. Each milestone includes specific deliverables, success criteria, and time estimates.
 
+**📋 Planning Documents:**
+- **[NEXT_STEPS.md](NEXT_STEPS.md)** - Detailed breakdown of Weeks 15-26 into small, testable chunks
+- **[DEFERRED_FEATURES.md](DEFERRED_FEATURES.md)** - Complete tracking of deferred features with implementation timeline
+- **[PHASE_3_COMPLETE.md](PHASE_3_COMPLETE.md)** - Summary of completed object pipeline milestone
+
+## Current Status (Week 14)
+
+**🎉 Phase 3 Complete - Object Pipeline Milestone Reached!**
+
+- ✅ **5 cmdlets working**: Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object
+- ✅ **235 tests passing**: 100% pass rate
+- ✅ **Object pipeline proven**: End-to-end object flow demonstrated
+- ✅ **Zero technical debt**: Clean, maintainable codebase
+
+**Next Phase**: Week 15 - Begin Phase 4 (Built-in Cmdlets)
+
 ## Timeline Summary
 
 - **Total Duration**: 36 weeks (9 months)
-- **MVP Delivery**: Week 6
-- **Production Ready**: Week 36
+- **MVP Delivery**: Week 6 ✅ (Completed)
+- **Object Pipeline**: Week 14 ✅ (Completed)
+- **Beta Release**: Week 26 (Target)
+- **Production Ready**: Week 36 (Target)
 
 ## Phase 0: Foundation (Weeks 1-2)
 
@@ -433,76 +451,127 @@ Get-Process |
 
 ## Phase 4: Built-in Cmdlets (Weeks 15-20)
 
+**See [NEXT_STEPS.md](NEXT_STEPS.md) for detailed, chunk-by-chunk breakdown of this phase.**
+
 ### Week 15-16: File System Cmdlets
 
-**Tasks:**
-- [ ] Get-ChildItem
-- [ ] Get-Content
-- [ ] Set-Content
-- [ ] Test-Path
-- [ ] New-Item
-- [ ] Remove-Item
+**Goal**: Enable file system operations for practical scripting
 
-**Time Estimate**: 80 hours
+**Tasks:**
+- [ ] Get-ChildItem (ls/dir) - Directory listing with filtering
+- [ ] Get-Content - Read file contents
+- [ ] Set-Content - Write file contents
+- [ ] Test-Path - Check file/directory existence
+- [ ] New-Item - Create files and directories
+- [ ] Remove-Item - Delete files and directories
+
+**Deliverables**: 6 cmdlets, 25+ tests, 10+ example scripts
+
+**Time Estimate**: 80-100 hours (2 weeks)
 
 ### Week 17-18: Object Manipulation Cmdlets
 
-**Tasks:**
-- [ ] Sort-Object
-- [ ] Group-Object
-- [ ] Measure-Object
-- [ ] Compare-Object
+**Goal**: Complete object pipeline manipulation capabilities
 
-**Time Estimate**: 80 hours
+**Tasks:**
+- [ ] Sort-Object - Sort objects by properties
+- [ ] Group-Object - Group objects by property values
+- [ ] Measure-Object - Calculate statistics (count, sum, average, min, max)
+- [ ] Compare-Object - Compare two collections
+- [ ] Select-Object enhancements - Calculated properties (deferred from Week 12)
+
+**Deliverables**: 4 cmdlets + 1 enhancement, 20+ tests, 8+ example scripts
+
+**Time Estimate**: 76-92 hours (2 weeks)
 
 ### Week 19-20: Utility Cmdlets
 
-**Tasks:**
-- [ ] Write-Host
-- [ ] Read-Host
-- [ ] Get-Date
-- [ ] Format-Table
-- [ ] Format-List
-- [ ] Out-String
+**Goal**: User interaction, formatting, and utility operations
 
-**Time Estimate**: 80 hours
+**Tasks:**
+- [ ] Write-Host - Colored console output
+- [ ] Read-Host - User input with prompts
+- [ ] Get-Date - Date/time operations
+- [ ] Format-Table - Tabular output formatting
+- [ ] Format-List - List output formatting
+- [ ] Out-String - Convert pipeline to string
+- [ ] Select-String - Pattern matching (grep-like)
+- [ ] Out-File - Write pipeline to file
+- [ ] ConvertTo-Json / ConvertFrom-Json - JSON serialization
+- [ ] Get-Random, Get-Member, Clear-Host, Variable cmdlets
+
+**Deliverables**: 10+ cmdlets, 30+ tests, 15+ example scripts
+
+**Time Estimate**: 76-94 hours (2 weeks)
+
+**Phase 4 Total**: ~230-286 hours over 6 weeks
 
 ---
 
 ## Phase 5: Advanced Features (Weeks 21-26)
 
-### Week 21-22: Loops
+**See [NEXT_STEPS.md](NEXT_STEPS.md) for detailed, chunk-by-chunk breakdown of this phase.**
+
+### Week 21-22: Loops & Control Flow
+
+**Goal**: Implement all loop constructs and range operator
 
 **Tasks:**
-- [ ] foreach loop
-- [ ] while loop
-- [ ] do-while loop
-- [ ] for loop
-- [ ] break/continue
+- [ ] Range operator (1..10, 'a'..'z')
+- [ ] foreach loop - Iterate over collections
+- [ ] while loop - Condition-based iteration
+- [ ] do-while loop - Post-condition iteration
+- [ ] for loop - C-style iteration
+- [ ] break/continue - Loop control statements
+- [ ] Method calls on objects - $obj.Method() (deferred from Week 10)
 
-**Time Estimate**: 80 hours
+**Deliverables**: All loop types, range operator, method calls, 25+ tests, 10+ example scripts
+
+**Time Estimate**: 74-92 hours (2 weeks)
 
 ### Week 23-24: Error Handling
 
-**Tasks:**
-- [ ] try/catch/finally
-- [ ] throw
-- [ ] $Error variable
-- [ ] -ErrorAction parameter
-- [ ] Error records
+**Goal**: Structured exception handling and error management
 
-**Time Estimate**: 80 hours
+**Tasks:**
+- [ ] try/catch/finally - Exception handling blocks
+- [ ] throw - Throw exceptions
+- [ ] $Error variable - Error tracking
+- [ ] -ErrorAction parameter - Error behavior control
+- [ ] Error records - Structured error information
+- [ ] ErrorRecord type system
+- [ ] Type-specific catch blocks
+
+**Deliverables**: Complete error handling, 20+ tests, 8+ example scripts
+
+**Time Estimate**: 76-94 hours (2 weeks)
 
 ### Week 25-26: Collections & Types
 
-**Tasks:**
-- [ ] Arrays (@())
-- [ ] Hashtables (@{})
-- [ ] Array indexing
-- [ ] Type casting ([int], [string])
-- [ ] Type constraints
+**Goal**: Advanced collection manipulation and type system
 
-**Time Estimate**: 80 hours
+**Tasks:**
+- [ ] Array indexing ($arr[0], $arr[-1])
+- [ ] Array slicing ($arr[1..3])
+- [ ] Array operators (+, +=, -contains, -in)
+- [ ] Hashtable enhancements ([ordered], indexing)
+- [ ] Type casting ([int], [string], [bool])
+- [ ] Type constraints (param([int]$x))
+- [ ] Type accelerators ([PSCustomObject], [ordered])
+- [ ] ForEach-Object -Begin/-Process/-End (deferred from Week 13)
+
+**Deliverables**: Complete array/hashtable features, type system, 25+ tests, 10+ example scripts
+
+**Time Estimate**: 76-92 hours (2 weeks)
+
+**Phase 5 Total**: ~226-278 hours over 6 weeks
+
+**🎯 Beta Milestone (Week 26)**:
+- 30+ cmdlets implemented
+- All core language features complete
+- 85%+ test coverage maintained
+- 100+ example scripts
+- Ready for external beta testing
 
 ---
 
