@@ -518,7 +518,44 @@ impl Parser {
                 break;
             }
 
-            // Otherwise, parse as positional argument
+            // Special case: bare identifier as argument (should be treated as string)
+            // In PowerShell, bare words in argument position are strings
+            // e.g., Select-Object Name, CPU -> Name and CPU are strings
+            if let Some(Token::Identifier(name)) = self.peek() {
+                // Check what comes after the identifier
+                let next_idx = self.current + 1;
+                let is_bare_word = if next_idx < self.tokens.len() {
+                    matches!(
+                        &self.tokens[next_idx].token,
+                        Token::Comma
+                            | Token::Pipeline
+                            | Token::RightParen
+                            | Token::RightBrace
+                            | Token::Newline
+                            | Token::Semicolon
+                            | Token::Eof
+                    )
+                } else {
+                    true // End of tokens, it's a bare word
+                };
+
+                if is_bare_word {
+                    // Treat as string literal
+                    let identifier = name.clone();
+                    self.advance();
+                    arguments.push(Argument::Positional(Expression::Literal(Literal::String(
+                        identifier,
+                    ))));
+
+                    // Skip optional comma
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
+                    continue;
+                }
+            }
+
+            // Otherwise, parse as positional argument normally
             let arg = self.parse_primary()?;
             arguments.push(Argument::Positional(arg));
 

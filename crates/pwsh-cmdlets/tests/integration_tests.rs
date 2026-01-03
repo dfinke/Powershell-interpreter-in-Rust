@@ -267,3 +267,38 @@ fn test_week12_combined_property_and_first() {
         panic!("Expected array result");
     }
 }
+
+#[test]
+fn test_select_object_positional_arguments() {
+    // Test using bare identifiers as positional arguments (issue fix)
+    // This is the syntax from the problem statement: Select-Object Name, CPU
+    let code = r#"
+        $processes = @(
+            @{Name="chrome"; CPU=45.2; Id=5678; WorkingSet=512000}
+            @{Name="code"; CPU=23.1; Id=9012; WorkingSet=256000}
+            @{Name="pwsh"; CPU=5.0; Id=3456; WorkingSet=51200}
+        )
+        $processes | Select-Object Name, CPU
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    // Result should be an array
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 3);
+
+        // Each item should be an object with only Name and CPU
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 2);
+                assert!(props.contains_key("Name"));
+                assert!(props.contains_key("CPU"));
+                assert!(!props.contains_key("Id"));
+                assert!(!props.contains_key("WorkingSet"));
+            } else {
+                panic!("Expected object in array");
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
