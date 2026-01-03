@@ -22,25 +22,34 @@ fn verify_select_object_issue_fix() {
     let tokens = lexer.tokenize().expect("Lexer should succeed");
     let mut parser = Parser::new(tokens);
     let program = parser.parse().expect("Parser should succeed");
-    
+
     let mut registry = pwsh_runtime::CmdletRegistry::new();
     pwsh_cmdlets::register_all(&mut registry);
     let mut evaluator = Evaluator::with_registry(registry);
-    
-    let result = evaluator.eval(program).expect("Should execute without 'Name' cmdlet error");
-    
+
+    let result = evaluator
+        .eval(program)
+        .expect("Should execute without 'Name' cmdlet error");
+
     // Verify the result is correct
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 5, "Should have 5 process objects");
-        
+
         // Check each object only has Name and CPU properties
         for item in items {
             if let Value::Object(props) = item {
-                assert_eq!(props.len(), 2, "Each object should have exactly 2 properties");
+                assert_eq!(
+                    props.len(),
+                    2,
+                    "Each object should have exactly 2 properties"
+                );
                 assert!(props.contains_key("Name"), "Should have Name property");
                 assert!(props.contains_key("CPU"), "Should have CPU property");
                 assert!(!props.contains_key("Id"), "Should NOT have Id property");
-                assert!(!props.contains_key("WorkingSet"), "Should NOT have WorkingSet property");
+                assert!(
+                    !props.contains_key("WorkingSet"),
+                    "Should NOT have WorkingSet property"
+                );
             } else {
                 panic!("Expected Object value in array");
             }
@@ -65,13 +74,13 @@ fn test_select_object_single_property_bare_word() {
     let tokens = lexer.tokenize().unwrap();
     let mut parser = Parser::new(tokens);
     let program = parser.parse().unwrap();
-    
+
     let mut registry = pwsh_runtime::CmdletRegistry::new();
     pwsh_cmdlets::register_all(&mut registry);
     let mut evaluator = Evaluator::with_registry(registry);
-    
+
     let result = evaluator.eval(program).unwrap();
-    
+
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 2);
         for item in items {
@@ -99,13 +108,13 @@ fn test_select_object_three_properties() {
     let tokens = lexer.tokenize().unwrap();
     let mut parser = Parser::new(tokens);
     let program = parser.parse().unwrap();
-    
+
     let mut registry = pwsh_runtime::CmdletRegistry::new();
     pwsh_cmdlets::register_all(&mut registry);
     let mut evaluator = Evaluator::with_registry(registry);
-    
+
     let result = evaluator.eval(program).unwrap();
-    
+
     // When pipeline returns a single item, it's not wrapped in an array
     if let Value::Object(props) = result {
         assert_eq!(props.len(), 3);
@@ -134,13 +143,13 @@ fn test_bare_words_with_first_parameter() {
     let tokens = lexer.tokenize().unwrap();
     let mut parser = Parser::new(tokens);
     let program = parser.parse().unwrap();
-    
+
     let mut registry = pwsh_runtime::CmdletRegistry::new();
     pwsh_cmdlets::register_all(&mut registry);
     let mut evaluator = Evaluator::with_registry(registry);
-    
+
     let result = evaluator.eval(program).unwrap();
-    
+
     if let Value::Array(items) = result {
         assert_eq!(items.len(), 2, "Should only return first 2 items");
         for item in items {
