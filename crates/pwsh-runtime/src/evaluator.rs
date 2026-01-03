@@ -422,6 +422,18 @@ impl Evaluator {
                 }
                 Ok(Value::Array(values))
             }
+
+            Expression::Pipeline(pipeline) => {
+                // Execute the pipeline and return the results
+                let results = self.execute_pipeline(&pipeline)?;
+
+                // Return all results as an array if multiple, or single value if one, or null if none
+                match results.len() {
+                    0 => Ok(Value::Null),
+                    1 => Ok(results[0].clone()),
+                    _ => Ok(Value::Array(results)),
+                }
+            }
         }
     }
 

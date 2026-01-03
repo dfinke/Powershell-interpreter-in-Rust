@@ -85,7 +85,15 @@ impl Parser {
         };
 
         self.consume(&Token::Assignment, "=")?;
-        let value = self.parse_expression()?;
+        
+        // Check if the value contains a pipeline
+        let value = if self.contains_pipeline() {
+            // Parse as pipeline and wrap in Expression::Pipeline
+            let pipeline = self.parse_pipeline()?;
+            Expression::Pipeline(pipeline)
+        } else {
+            self.parse_expression()?
+        };
         self.consume_statement_terminator();
 
         Ok(Statement::Assignment { variable, value })

@@ -725,3 +725,37 @@ fn test_parse_array_in_pipeline() {
         _ => panic!("Expected pipeline"),
     }
 }
+
+#[test]
+fn test_parse_assignment_with_pipeline() {
+    let program = parse_str("$selected = $processes | Select-Object Name, CPU").unwrap();
+    assert_eq!(program.statements.len(), 1);
+
+    match &program.statements[0] {
+        Statement::Assignment { variable, value } => {
+            assert_eq!(variable, "selected");
+            match value {
+                Expression::Pipeline(pipeline) => {
+                    assert_eq!(pipeline.stages.len(), 2);
+                    // First stage should be a variable
+                    match &pipeline.stages[0] {
+                        Expression::Variable(name) => {
+                            assert_eq!(name, "processes");
+                        }
+                        _ => panic!("Expected variable"),
+                    }
+                    // Second stage should be a call to Select-Object
+                    match &pipeline.stages[1] {
+                        Expression::Call { name, arguments } => {
+                            assert_eq!(name, "Select-Object");
+                            assert_eq!(arguments.len(), 2);
+                        }
+                        _ => panic!("Expected function call"),
+                    }
+                }
+                _ => panic!("Expected pipeline expression"),
+            }
+        }
+        _ => panic!("Expected assignment"),
+    }
+}
