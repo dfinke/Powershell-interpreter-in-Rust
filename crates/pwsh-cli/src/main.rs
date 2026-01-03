@@ -3,8 +3,9 @@ use pwsh_lexer::Lexer;
 use pwsh_parser::Parser;
 use pwsh_runtime::Evaluator;
 use reedline::{
-    ColumnarMenu, DefaultCompleter, FileBackedHistory, Highlighter, Prompt, PromptEditMode,
-    PromptHistorySearch, Reedline, ReedlineMenu, Signal, StyledText, ValidationResult, Validator,
+    ColumnarMenu, Completer, FileBackedHistory, Highlighter, Prompt, PromptEditMode,
+    PromptHistorySearch, Reedline, ReedlineMenu, Signal, Span, StyledText, Suggestion,
+    ValidationResult, Validator,
 };
 use std::borrow::Cow;
 
@@ -51,6 +52,68 @@ impl Validator for PowerShellValidator {
         } else {
             ValidationResult::Complete
         }
+    }
+}
+
+// --- Completer ---
+
+/// Case-insensitive completer for PowerShell cmdlets
+struct PowerShellCompleter {
+    commands: Vec<String>,
+}
+
+impl PowerShellCompleter {
+    fn new(commands: Vec<String>) -> Self {
+        Self { commands }
+    }
+}
+
+impl Completer for PowerShellCompleter {
+    fn complete(&mut self, line: &str, pos: usize) -> Vec<Suggestion> {
+        // Extract the word at the cursor position
+        // Find the start of the current word by scanning backwards
+        let bytes_before = &line.as_bytes()[..pos];
+        let mut start = pos;
+
+        // Scan backwards through byte positions to find word boundary
+        for (i, &byte) in bytes_before.iter().enumerate().rev() {
+            let c = byte as char;
+            if c.is_whitespace() || c == '|' || c == ';' {
+                start = i + 1;
+                break;
+            }
+            if i == 0 {
+                start = 0;
+            }
+        }
+
+        let partial = &line[start..pos];
+
+        // Skip completion for very short inputs
+        if partial.len() < 2 {
+            return vec![];
+        }
+
+        let partial_lower = partial.to_lowercase();
+
+        // Find matching commands (case-insensitive)
+        let mut completions: Vec<Suggestion> = self
+            .commands
+            .iter()
+            .filter(|cmd| cmd.to_lowercase().starts_with(&partial_lower))
+            .map(|cmd| Suggestion {
+                value: cmd.clone(),
+                description: None,
+                extra: None,
+                span: Span::new(start, pos),
+                append_whitespace: true,
+            })
+            .collect();
+
+        // Sort completions for consistent ordering
+        completions.sort_by(|a, b| a.value.cmp(&b.value));
+
+        completions
     }
 }
 
@@ -144,16 +207,16 @@ fn main() -> std::io::Result<()> {
             .expect("Error creating history file"),
     );
 
-    // Add a basic completer for cmdlets
+    // Add a case-insensitive completer for cmdlets
     let commands = vec![
-        "Write-Output".into(),
-        "Get-Process".into(),
-        "Where-Object".into(),
-        "Select-Object".into(),
-        "ForEach-Object".into(),
-        "exit".into(),
+        "Write-Output".to_string(),
+        "Get-Process".to_string(),
+        "Where-Object".to_string(),
+        "Select-Object".to_string(),
+        "ForEach-Object".to_string(),
+        "exit".to_string(),
     ];
-    let completer = Box::new(DefaultCompleter::new_with_wordlen(commands, 2));
+    let completer = Box::new(PowerShellCompleter::new(commands));
 
     // Set up the line editor
     let mut line_editor = Reedline::create()
@@ -242,4 +305,80 @@ fn main() -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_case_insensitive_completion() {
+        let commands = vec![
+            "Write-Output".to_string(),
+            "Get-Process".to_string(),
+            "Where-Object".to_string(),
+            "Select-Object".to_string(),
+            "ForEach-Object".to_string(),
+        ];
+        let mut completer = PowerShellCompleter::new(commands);
+
+        // Test lowercase "select" should match "Select-Object"
+        let completions = completer.complete("select", 6);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Select-Object");
+
+        // Test uppercase "SELECT" should also match
+        let completions = completer.complete("SELECT", 6);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Select-Object");
+
+        // Test mixed case "SeLeCt" should also match
+        let completions = completer.complete("SeLeCt", 6);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Select-Object");
+
+        // Test partial "wh" should match "Where-Object"
+        let completions = completer.complete("wh", 2);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Where-Object");
+
+        // Test "get" should match "Get-Process"
+        let completions = completer.complete("get", 3);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Get-Process");
+
+        // Test in pipeline context: "$a | select"
+        let completions = completer.complete("$a | select", 11);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Select-Object");
+
+        // Test that single character doesn't complete
+        let completions = completer.complete("s", 1);
+        assert_eq!(completions.len(), 0);
+    }
+
+    #[test]
+    fn test_multiple_matches() {
+        let commands = vec![
+            "Write-Output".to_string(),
+            "Where-Object".to_string(),
+            "Select-Object".to_string(),
+        ];
+        let mut completer = PowerShellCompleter::new(commands);
+
+        // Test "w" prefix should match both Write-Output and Where-Object
+        let completions = completer.complete("w", 1);
+        // Should be empty because min length is 2
+        assert_eq!(completions.len(), 0);
+
+        // Test "wr" should match Write-Output
+        let completions = completer.complete("wr", 2);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Write-Output");
+
+        // Test "wh" should match Where-Object
+        let completions = completer.complete("wh", 2);
+        assert_eq!(completions.len(), 1);
+        assert_eq!(completions[0].value, "Where-Object");
+    }
 }
