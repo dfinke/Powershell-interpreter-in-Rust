@@ -111,13 +111,7 @@ impl Evaluator {
             Statement::Pipeline(pipeline) => {
                 // Execute the pipeline
                 let results = self.execute_pipeline(&pipeline)?;
-
-                // Return all results as an array if multiple, or single value if one, or null if none
-                match results.len() {
-                    0 => Ok(Value::Null),
-                    1 => Ok(results[0].clone()),
-                    _ => Ok(Value::Array(results)),
-                }
+                Ok(Self::pipeline_results_to_value(results))
             }
         }
     }
@@ -140,6 +134,16 @@ impl Evaluator {
         }
 
         Ok(current_output)
+    }
+
+    /// Convert pipeline results to a single Value
+    fn pipeline_results_to_value(results: Vec<Value>) -> Value {
+        // Return all results as an array if multiple, or single value if one, or null if none
+        match results.len() {
+            0 => Value::Null,
+            1 => results[0].clone(),
+            _ => Value::Array(results),
+        }
     }
 
     /// Execute a single pipeline stage
@@ -421,6 +425,12 @@ impl Evaluator {
                     values.push(value);
                 }
                 Ok(Value::Array(values))
+            }
+
+            Expression::Pipeline(pipeline) => {
+                // Execute the pipeline and return the results
+                let results = self.execute_pipeline(&pipeline)?;
+                Ok(Self::pipeline_results_to_value(results))
             }
         }
     }

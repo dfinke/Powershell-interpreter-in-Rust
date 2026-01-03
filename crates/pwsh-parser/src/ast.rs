@@ -77,6 +77,8 @@ pub enum Expression {
     Hashtable(Vec<(String, Expression)>),
     /// Array: @(item1, item2, ...)
     Array(Vec<Expression>),
+    /// Pipeline: expr | expr | expr
+    Pipeline(Pipeline),
 }
 
 /// Literal values
