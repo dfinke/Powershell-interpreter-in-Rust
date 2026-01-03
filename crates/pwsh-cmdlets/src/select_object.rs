@@ -24,7 +24,17 @@ impl Cmdlet for SelectObjectCmdlet {
         let mut input = context.pipeline_input;
 
         // Check for -Property parameter (select specific properties)
-        if let Some(property_value) = property_param {
+        // Also support positional arguments: Select-Object Name, CPU
+        let property_value = if let Some(prop) = property_param {
+            Some(prop)
+        } else if !context.arguments.is_empty() {
+            // Use positional arguments as properties
+            Some(Value::Array(context.arguments.clone()))
+        } else {
+            None
+        };
+
+        if let Some(property_value) = property_value {
             // Property can be a string (single property) or array (multiple properties)
             let properties = match property_value {
                 Value::String(s) => vec![s.clone()],
