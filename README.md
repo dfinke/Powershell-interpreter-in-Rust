@@ -76,10 +76,19 @@ This makes data manipulation more intuitive, powerful, and less error-prone.
 
 ## 📚 Documentation
 
+### Planning & Strategy
+- **[ROADMAP.md](ROADMAP.md)** - Week-by-week implementation plan with milestones
+- **[NEXT_STEPS.md](NEXT_STEPS.md)** - Detailed breakdown of Weeks 15-26 into small, testable chunks
+- **[DEFERRED_FEATURES.md](DEFERRED_FEATURES.md)** - Tracking of deferred features with rationale and timeline
+
+### Technical Documentation
 - **[INVESTIGATION.md](INVESTIGATION.md)** - Comprehensive analysis of language choice, architecture, and implementation strategy
 - **[TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)** - Detailed technical design with code examples and architecture diagrams
-- **[ROADMAP.md](ROADMAP.md)** - Week-by-week implementation plan with milestones
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started building in 30 minutes
+
+### Progress Tracking
+- **[PHASE_3_COMPLETE.md](PHASE_3_COMPLETE.md)** - Object Pipeline milestone completion summary
+- **[WEEK_*_SUMMARY.md](.)** - Weekly progress summaries (Weeks 5-14)
 
 ## 🏗️ Architecture
 
@@ -203,11 +212,18 @@ $selected | ForEach-Object { Write-Output "$($_.Name): $($_.CPU)" }
 - **Week 14 Complete** ✅
 - **🎉 OBJECT PIPELINE MILESTONE REACHED! 🎉**
 
-### Phase 4: Built-in Cmdlets (Weeks 15-20)
-- File system, object manipulation, utility cmdlets
+### Phase 4: Built-in Cmdlets (Weeks 15-20) ⬅️ CURRENT PHASE
+- **Week 15-16**: File system cmdlets (Get-ChildItem, Get-Content, Set-Content, etc.)
+- **Week 17-18**: Object manipulation (Sort-Object, Group-Object, Measure-Object, Compare-Object)
+- **Week 19-20**: Utility cmdlets (Write-Host, Read-Host, Format-Table, Get-Date, etc.)
+- **Target**: 20+ new cmdlets, real OS integration
+- **See [NEXT_STEPS.md](NEXT_STEPS.md) for detailed chunk-by-chunk breakdown**
 
-### Phase 5: Advanced Features (Weeks 21-26)
-- Loops, error handling, arrays, hashtables
+### Phase 5: Advanced Features (Weeks 21-26) - Path to Beta
+- **Week 21-22**: Loops (foreach, while, for) + Range operator + Method calls
+- **Week 23-24**: Error handling (try/catch/finally, throw, $Error)
+- **Week 25-26**: Collections & Types (array indexing, type casting)
+- **Beta Milestone (Week 26)**: 30+ cmdlets, all core features, 100 examples
 
 ### Phase 6: Module System (Weeks 27-30)
 - Module loading, Import-Module, manifests
