@@ -4,6 +4,36 @@ use pwsh_parser::Parser;
 use pwsh_runtime::{Evaluator, Value};
 
 #[test]
+fn test_case_insensitive_property_selection() {
+    // Test for case-insensitive property lookup
+    let code = r#"
+        $process = @{CPU=45.2; Name="pwsh"; Id=3456}
+        $process | Select-Object CPu
+    "#;
+
+    let mut lexer = Lexer::new(code);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+
+    let mut registry = pwsh_runtime::CmdletRegistry::new();
+    pwsh_cmdlets::register_all(&mut registry);
+    let mut evaluator = Evaluator::with_registry(registry);
+
+    let result = evaluator.eval(program).unwrap();
+
+    // Verify the property was found despite different case
+    if let Value::Object(props) = result {
+        assert_eq!(props.len(), 1, "Should have exactly 1 property");
+        // The property should be found (case-insensitive)
+        assert!(props.contains_key("CPu"), "Should have CPu property");
+        assert_eq!(props.get("CPu"), Some(&Value::Number(45.2)));
+    } else {
+        panic!("Expected object result, got: {:?}", result);
+    }
+}
+
+#[test]
 fn verify_select_object_issue_fix() {
     // This is the exact code from the issue
     let code = r#"
