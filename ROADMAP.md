@@ -572,11 +572,6 @@ Get-Process |
 - 85%+ test coverage maintained
 - 100+ example scripts
 - Ready for external beta testing
-- [ ] Array indexing
-- [ ] Type casting ([int], [string])
-- [ ] Type constraints
-
-**Time Estimate**: 80 hours
 
 ---
 
