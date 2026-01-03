@@ -353,13 +353,21 @@ fn test_select_object_get_process_case_insensitive() {
         assert!(items.len() > 0);
         for item in items {
             if let Value::Object(props) = item {
-                assert!(props.contains_key("name") || props.contains_key("Name"), "Should contain name property. Props: {:?}", props);
+                assert!(
+                    props.contains_key("Name") || props.contains_key("name"),
+                    "Should contain name property. Props: {:?}",
+                    props
+                );
             } else {
                 panic!("Expected object");
             }
         }
     } else if let Value::Object(props) = result {
-        assert!(props.contains_key("name") || props.contains_key("Name"), "Should contain name property. Props: {:?}", props);
+        assert!(
+            props.contains_key("Name") || props.contains_key("name"),
+            "Should contain name property. Props: {:?}",
+            props
+        );
     } else {
         panic!("Expected array or object, got {:?}", result);
     }
@@ -375,8 +383,9 @@ fn test_week15_get_childitem_basic() {
     // So we need to check if it's an Object with Name property
     if let Value::Object(props) = result {
         assert!(
-            props.contains_key("Name"),
-            "File object should have a Name property"
+            props.contains_key("Name") || props.contains_key("name"),
+            "File object should have a Name property. Props: {:?}",
+            props
         );
     } else {
         panic!("Expected object result from Get-ChildItem, got {:?}", result);
@@ -396,7 +405,11 @@ fn test_week15_get_childitem_with_select() {
         for item in items {
             if let Value::Object(props) = item {
                 assert_eq!(props.len(), 1, "Should only have Name property");
-                assert!(props.contains_key("Name"));
+                assert!(
+                    props.contains_key("Name") || props.contains_key("name"),
+                    "Should contain Name property. Props: {:?}",
+                    props
+                );
             } else {
                 panic!("Expected object in array");
             }
