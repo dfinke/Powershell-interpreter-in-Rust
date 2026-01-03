@@ -55,11 +55,12 @@ impl Cmdlet for SelectObjectCmdlet {
             let mut results = Vec::new();
             for item in input {
                 match item {
-                    Value::Object(props) => {
+                    Value::Object(_) => {
                         let mut new_obj = HashMap::new();
                         for prop_name in &properties {
-                            if let Some(value) = props.get(prop_name) {
-                                new_obj.insert(prop_name.clone(), value.clone());
+                            // Use case-insensitive property lookup
+                            if let Some(value) = item.get_property(prop_name) {
+                                new_obj.insert(prop_name.clone(), value);
                             }
                         }
                         results.push(Value::Object(new_obj));
@@ -254,6 +255,40 @@ mod tests {
         if let Value::Object(props) = &result[0] {
             assert_eq!(props.len(), 1);
             assert_eq!(props.get("Name"), Some(&Value::String("Test1".to_string())));
+        } else {
+            panic!("Expected object result");
+        }
+    }
+
+    #[test]
+    fn test_select_object_case_insensitive_properties() {
+        // Test case for issue: Property lookup should be case-insensitive
+        let cmdlet = SelectObjectCmdlet;
+
+        // Create object with properties in specific case
+        let mut obj = HashMap::new();
+        obj.insert("CPU".to_string(), Value::Number(45.2));
+        obj.insert("Name".to_string(), Value::String("pwsh".to_string()));
+        obj.insert("Id".to_string(), Value::Number(3456.0));
+
+        let input = vec![Value::Object(obj)];
+
+        // Select using different case - "CPu" instead of "CPU"
+        let properties = vec![Value::String("CPu".to_string())];
+        let context = CmdletContext::with_input(input)
+            .with_parameter("Property".to_string(), Value::Array(properties));
+
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+        assert_eq!(result.len(), 1);
+
+        // Verify the property was found despite case difference
+        if let Value::Object(props) = &result[0] {
+            assert_eq!(props.len(), 1);
+            // The result should contain the property with the value
+            // Note: The key uses the requested case "CPu"
+            assert!(props.contains_key("CPu"));
+            assert_eq!(props.get("CPu"), Some(&Value::Number(45.2)));
         } else {
             panic!("Expected object result");
         }
