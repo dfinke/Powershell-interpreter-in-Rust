@@ -388,7 +388,10 @@ fn test_week15_get_childitem_basic() {
             props
         );
     } else {
-        panic!("Expected object result from Get-ChildItem, got {:?}", result);
+        panic!(
+            "Expected object result from Get-ChildItem, got {:?}",
+            result
+        );
     }
 }
 
