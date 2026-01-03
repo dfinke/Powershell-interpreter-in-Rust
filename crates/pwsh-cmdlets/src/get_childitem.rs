@@ -13,19 +13,25 @@ impl Cmdlet for GetChildItemCmdlet {
 
     fn execute(
         &self,
-        _context: CmdletContext,
+        context: CmdletContext,
         _evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
-        // Get current directory
-        let current_dir = std::env::current_dir().map_err(|e| {
-            RuntimeError::InvalidOperation(format!("Failed to get current directory: {}", e))
-        })?;
+        // Get path from parameters or arguments, default to current directory
+        let path = if let Some(Value::String(p)) = context.get_parameter("Path") {
+            std::path::PathBuf::from(p)
+        } else if let Some(Value::String(p)) = context.get_argument(0) {
+            std::path::PathBuf::from(p)
+        } else {
+            std::env::current_dir().map_err(|e| {
+                RuntimeError::InvalidOperation(format!("Failed to get current directory: {}", e))
+            })?
+        };
 
         // Read directory contents
-        let entries = fs::read_dir(&current_dir).map_err(|e| {
+        let entries = fs::read_dir(&path).map_err(|e| {
             RuntimeError::InvalidOperation(format!(
                 "Failed to read directory '{}': {}",
-                current_dir.display(),
+                path.display(),
                 e
             ))
         })?;
@@ -68,25 +74,19 @@ mod tests {
         File::create(temp_path.join("file2.txt")).unwrap();
         File::create(temp_path.join("file3.rs")).unwrap();
 
-        // Change to temp directory and run test
-        let original_dir = std::env::current_dir().unwrap();
-        let result = std::panic::catch_unwind(|| {
-            std::env::set_current_dir(temp_path).unwrap();
-
-            // Execute cmdlet
-            let cmdlet = GetChildItemCmdlet;
-            let context = CmdletContext::new();
-            let mut evaluator = pwsh_runtime::Evaluator::new();
-            cmdlet.execute(context, &mut evaluator).unwrap()
-        });
-
-        // Restore original directory before checking results
-        std::env::set_current_dir(original_dir).unwrap();
-
-        let result = result.unwrap();
+        // Execute cmdlet with path as argument
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_arguments(vec![Value::String(temp_path.to_string_lossy().to_string())]);
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
 
         // Verify we have at least 3 files (temp dirs may have extra files)
-        assert!(result.len() >= 3, "Should return at least 3 files, got {}", result.len());
+        assert!(
+            result.len() >= 3,
+            "Should return at least 3 files, got {}",
+            result.len()
+        );
 
         // Verify that our test files are present
         let mut found_file1 = false;
@@ -126,22 +126,12 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let temp_path = temp_dir.path();
 
-        // Change to temp directory and run test
-        let original_dir = std::env::current_dir().unwrap();
-        let result = std::panic::catch_unwind(|| {
-            std::env::set_current_dir(temp_path).unwrap();
-
-            // Execute cmdlet
-            let cmdlet = GetChildItemCmdlet;
-            let context = CmdletContext::new();
-            let mut evaluator = pwsh_runtime::Evaluator::new();
-            cmdlet.execute(context, &mut evaluator).unwrap()
-        });
-
-        // Restore original directory before checking results
-        std::env::set_current_dir(original_dir).unwrap();
-
-        let result = result.unwrap();
+        // Execute cmdlet with path as argument
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_arguments(vec![Value::String(temp_path.to_string_lossy().to_string())]);
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
 
         // Verify results
         assert_eq!(result.len(), 0, "Should return 0 files for empty directory");
@@ -157,22 +147,12 @@ mod tests {
         File::create(temp_path.join("file.txt")).unwrap();
         fs::create_dir(temp_path.join("subdir")).unwrap();
 
-        // Change to temp directory and run test
-        let original_dir = std::env::current_dir().unwrap();
-        let result = std::panic::catch_unwind(|| {
-            std::env::set_current_dir(temp_path).unwrap();
-
-            // Execute cmdlet
-            let cmdlet = GetChildItemCmdlet;
-            let context = CmdletContext::new();
-            let mut evaluator = pwsh_runtime::Evaluator::new();
-            cmdlet.execute(context, &mut evaluator).unwrap()
-        });
-
-        // Restore original directory before checking results
-        std::env::set_current_dir(original_dir).unwrap();
-
-        let result = result.unwrap();
+        // Execute cmdlet with path as argument
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_arguments(vec![Value::String(temp_path.to_string_lossy().to_string())]);
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
 
         // Verify results
         assert_eq!(result.len(), 2, "Should return both file and directory");
