@@ -302,3 +302,44 @@ fn test_select_object_positional_arguments() {
         panic!("Expected array result");
     }
 }
+
+#[test]
+fn test_week15_get_childitem_basic() {
+    // Test that Get-ChildItem returns an array of file objects
+    let result = eval_with_cmdlets("Get-ChildItem").unwrap();
+
+    // When a cmdlet returns an array and there's no pipeline,
+    // the evaluator returns the last element of the array
+    // So we need to check if it's an Object with Name property
+    if let Value::Object(props) = result {
+        assert!(
+            props.contains_key("Name"),
+            "File object should have a Name property"
+        );
+    } else {
+        panic!("Expected object result from Get-ChildItem, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_week15_get_childitem_with_select() {
+    // Test Get-ChildItem piped to Select-Object
+    let result = eval_with_cmdlets("Get-ChildItem | Select-Object Name").unwrap();
+
+    // Result should be an array
+    if let Value::Array(items) = result {
+        assert!(items.len() > 0, "Should return at least some items");
+
+        // Each item should only have Name property
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 1, "Should only have Name property");
+                assert!(props.contains_key("Name"));
+            } else {
+                panic!("Expected object in array");
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
