@@ -16,3 +16,4 @@ pwsh-runtime = { path = "../pwsh-runtime" }
 [dev-dependencies]
 pwsh-lexer = { path = "../pwsh-lexer" }
 pwsh-parser = { path = "../pwsh-parser" }
+tempfile = "3.8"

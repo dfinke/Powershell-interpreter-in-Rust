@@ -194,9 +194,9 @@ impl Prompt for PowerShellPrompt {
 
 fn main() -> std::io::Result<()> {
     println!("PowerShell Interpreter - Modern REPL");
-    println!("Object Pipeline with 5 Cmdlets!");
+    println!("Object Pipeline with 6 Cmdlets!");
     println!(
-        "Available cmdlets: Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object"
+        "Available cmdlets: Write-Output, Get-Process, Get-ChildItem, Where-Object, Select-Object, ForEach-Object"
     );
     println!("Type 'exit' to quit, or use Ctrl+D.\n");
 
@@ -214,6 +214,7 @@ fn main() -> std::io::Result<()> {
     let commands = vec![
         "Write-Output".to_string(),
         "Get-Process".to_string(),
+        "Get-ChildItem".to_string(),
         "Where-Object".to_string(),
         "Select-Object".to_string(),
         "ForEach-Object".to_string(),
