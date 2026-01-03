@@ -3,9 +3,9 @@ use pwsh_lexer::Lexer;
 use pwsh_parser::Parser;
 use pwsh_runtime::Evaluator;
 use reedline::{
-    ColumnarMenu, Completer, FileBackedHistory, Highlighter, Prompt, PromptEditMode,
-    PromptHistorySearch, Reedline, ReedlineMenu, Signal, Span, StyledText, Suggestion,
-    ValidationResult, Validator,
+    ColumnarMenu, Completer, Emacs, FileBackedHistory, Highlighter, KeyCode, KeyModifiers, Prompt,
+    PromptEditMode, PromptHistorySearch, Reedline, ReedlineEvent, ReedlineMenu, Signal, Span,
+    StyledText, Suggestion, ValidationResult, Validator,
 };
 use std::borrow::Cow;
 
@@ -210,6 +210,29 @@ fn main() -> std::io::Result<()> {
             .expect("Error creating history file"),
     );
 
+    let mut keybindings = reedline::default_emacs_keybindings();
+    keybindings.add_binding(
+        KeyModifiers::NONE,
+        KeyCode::Tab,
+        ReedlineEvent::UntilFound(vec![
+            ReedlineEvent::Menu("completion_menu".to_string()),
+            ReedlineEvent::MenuNext,
+        ]),
+    );
+    keybindings.add_binding(
+        KeyModifiers::CONTROL,
+        KeyCode::Char(' '),
+        ReedlineEvent::UntilFound(vec![
+            ReedlineEvent::Menu("completion_menu".to_string()),
+            ReedlineEvent::MenuNext,
+        ]),
+    );
+    keybindings.add_binding(
+        KeyModifiers::SHIFT,
+        KeyCode::BackTab,
+        ReedlineEvent::MenuPrevious,
+    );
+
     // Add a case-insensitive completer for cmdlets
     let commands = vec![
         "Write-Output".to_string(),
@@ -229,12 +252,16 @@ fn main() -> std::io::Result<()> {
         .with_history(history)
         .with_completer(completer)
         .with_quick_completions(true)
-        .with_partial_completions(true);
+        .with_partial_completions(true)
+        .with_edit_mode(Box::new(Emacs::new(keybindings)));
 
     // Add a menu for completions (Tab)
-    line_editor = line_editor.with_menu(ReedlineMenu::EngineCompleter(Box::new(
-        ColumnarMenu::default().with_name("completion_menu"),
-    )));
+    let completion_menu = ColumnarMenu::default()
+        .with_name("completion_menu")
+        .with_text_style(Style::new().fg(Color::Cyan))
+        .with_selected_text_style(Style::new().fg(Color::Black).on(Color::Cyan));
+
+    line_editor = line_editor.with_menu(ReedlineMenu::EngineCompleter(Box::new(completion_menu)));
 
     let prompt = PowerShellPrompt;
 
