@@ -304,6 +304,68 @@ fn test_select_object_positional_arguments() {
 }
 
 #[test]
+fn test_select_object_case_insensitive_property_lookup() {
+    // Test that Select-Object finds properties regardless of case
+    let code = r#"
+        $obj = @{Name="Test"; CPU=10}
+        $obj | Select-Object name, cpu
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    if let Value::Object(props) = result {
+        assert_eq!(props.len(), 2);
+        // The keys in the result object should match the requested case
+        assert!(props.contains_key("name"));
+        assert!(props.contains_key("cpu"));
+        assert_eq!(props.get("name"), Some(&Value::String("Test".to_string())));
+        assert_eq!(props.get("cpu"), Some(&Value::Number(10.0)));
+    } else {
+        panic!("Expected object result, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_select_object_mixed_case_input_and_request() {
+    // Test with mixed case in both input and request
+    let code = r#"
+        $obj = @{nAmE="Mixed"; cPu=20}
+        $obj | Select-Object Name, CPU
+    "#;
+    let result = eval_with_cmdlets(code).unwrap();
+
+    if let Value::Object(props) = result {
+        assert_eq!(props.len(), 2);
+        assert!(props.contains_key("Name"));
+        assert!(props.contains_key("CPU"));
+        assert_eq!(props.get("Name"), Some(&Value::String("Mixed".to_string())));
+        assert_eq!(props.get("CPU"), Some(&Value::Number(20.0)));
+    } else {
+        panic!("Expected object result, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_select_object_get_process_case_insensitive() {
+    let code = "Get-Process | Select-Object name";
+    let result = eval_with_cmdlets(code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert!(items.len() > 0);
+        for item in items {
+            if let Value::Object(props) = item {
+                assert!(props.contains_key("name") || props.contains_key("Name"), "Should contain name property. Props: {:?}", props);
+            } else {
+                panic!("Expected object");
+            }
+        }
+    } else if let Value::Object(props) = result {
+        assert!(props.contains_key("name") || props.contains_key("Name"), "Should contain name property. Props: {:?}", props);
+    } else {
+        panic!("Expected array or object, got {:?}", result);
+    }
+}
+
+#[test]
 fn test_week15_get_childitem_basic() {
     // Test that Get-ChildItem returns an array of file objects
     let result = eval_with_cmdlets("Get-ChildItem").unwrap();
