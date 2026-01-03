@@ -71,16 +71,19 @@ impl PowerShellCompleter {
 impl Completer for PowerShellCompleter {
     fn complete(&mut self, line: &str, pos: usize) -> Vec<Suggestion> {
         // Extract the word at the cursor position
+        // Find the start of the current word by scanning backwards
+        let bytes_before = &line.as_bytes()[..pos];
         let mut start = pos;
-        while start > 0 {
-            let ch = line.chars().nth(start - 1);
-            if let Some(c) = ch {
-                if c.is_whitespace() || c == '|' || c == ';' {
-                    break;
-                }
-                start -= 1;
-            } else {
+        
+        // Scan backwards through byte positions to find word boundary
+        for (i, &byte) in bytes_before.iter().enumerate().rev() {
+            let c = byte as char;
+            if c.is_whitespace() || c == '|' || c == ';' {
+                start = i + 1;
                 break;
+            }
+            if i == 0 {
+                start = 0;
             }
         }
 
