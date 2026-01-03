@@ -85,7 +85,7 @@ impl Parser {
         };
 
         self.consume(&Token::Assignment, "=")?;
-        
+
         // Check if the value contains a pipeline
         let value = if self.contains_pipeline() {
             // Parse as pipeline and wrap in Expression::Pipeline
