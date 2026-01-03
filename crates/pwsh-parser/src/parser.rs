@@ -528,6 +528,7 @@ impl Parser {
                     matches!(
                         &self.tokens[next_idx].token,
                         Token::Comma
+                            | Token::Minus  // Could be a named parameter for the parent cmdlet
                             | Token::Pipeline
                             | Token::RightParen
                             | Token::RightBrace

@@ -49,3 +49,108 @@ fn verify_select_object_issue_fix() {
         panic!("Expected array result");
     }
 }
+
+#[test]
+fn test_select_object_single_property_bare_word() {
+    // Test with a single property as bare word
+    let code = r#"
+        $items = @(
+            @{Name="A"; Value=1}
+            @{Name="B"; Value=2}
+        )
+        $items | Select-Object Name
+    "#;
+
+    let mut lexer = Lexer::new(code);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    
+    let mut registry = pwsh_runtime::CmdletRegistry::new();
+    pwsh_cmdlets::register_all(&mut registry);
+    let mut evaluator = Evaluator::with_registry(registry);
+    
+    let result = evaluator.eval(program).unwrap();
+    
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 1);
+                assert!(props.contains_key("Name"));
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
+
+#[test]
+fn test_select_object_three_properties() {
+    // Test with three properties
+    let code = r#"
+        $items = @(
+            @{A=1; B=2; C=3; D=4}
+        )
+        $items | Select-Object A, B, C
+    "#;
+
+    let mut lexer = Lexer::new(code);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    
+    let mut registry = pwsh_runtime::CmdletRegistry::new();
+    pwsh_cmdlets::register_all(&mut registry);
+    let mut evaluator = Evaluator::with_registry(registry);
+    
+    let result = evaluator.eval(program).unwrap();
+    
+    // When pipeline returns a single item, it's not wrapped in an array
+    if let Value::Object(props) = result {
+        assert_eq!(props.len(), 3);
+        assert!(props.contains_key("A"));
+        assert!(props.contains_key("B"));
+        assert!(props.contains_key("C"));
+        assert!(!props.contains_key("D"));
+    } else {
+        panic!("Expected object result, got: {:?}", result);
+    }
+}
+
+#[test]
+fn test_bare_words_with_first_parameter() {
+    // Test combining bare words with -First parameter
+    let code = r#"
+        $items = @(
+            @{Name="A"; Value=1}
+            @{Name="B"; Value=2}
+            @{Name="C"; Value=3}
+        )
+        $items | Select-Object Name -First 2
+    "#;
+
+    let mut lexer = Lexer::new(code);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    
+    let mut registry = pwsh_runtime::CmdletRegistry::new();
+    pwsh_cmdlets::register_all(&mut registry);
+    let mut evaluator = Evaluator::with_registry(registry);
+    
+    let result = evaluator.eval(program).unwrap();
+    
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2, "Should only return first 2 items");
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 1);
+                assert!(props.contains_key("Name"));
+                assert!(!props.contains_key("Value"));
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
