@@ -105,7 +105,7 @@ mod tests {
     fn test_week11_success_criteria() {
         // Week 11 Success Criteria from ROADMAP.md:
         // @(1,2,3,4,5) | Where-Object { $_ -gt 2 }  # 3,4,5
-        
+
         use pwsh_lexer::Lexer;
         use pwsh_parser::Parser;
         use pwsh_runtime::Evaluator;
@@ -116,12 +116,12 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap();
         let mut evaluator = Evaluator::new();
-        
+
         // Register cmdlets
         crate::register_all(evaluator.registry_mut());
-        
+
         let result = evaluator.eval(program).unwrap();
-        
+
         // Should return [3, 4, 5]
         match result {
             Value::Array(values) => {

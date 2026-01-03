@@ -90,7 +90,7 @@ mod tests {
     fn test_week13_success_criteria() {
         // Week 13 Success Criteria from ROADMAP.md:
         // 1..10 | ForEach-Object { $_ * 2 }
-        
+
         // Note: Range operator (1..10) not yet implemented, so we'll use @(1,2,3,4,5,6,7,8,9,10)
         use pwsh_lexer::Lexer;
         use pwsh_parser::Parser;
@@ -102,12 +102,12 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap();
         let mut evaluator = Evaluator::new();
-        
+
         // Register cmdlets
         crate::register_all(evaluator.registry_mut());
-        
+
         let result = evaluator.eval(program).unwrap();
-        
+
         // Should return [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
         match result {
             Value::Array(values) => {
