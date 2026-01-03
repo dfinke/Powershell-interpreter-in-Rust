@@ -4,19 +4,22 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 
 ## 🚀 Project Status
 
-**Current Phase**: Week 11 Complete - Script Blocks in Cmdlets! 🎉  
-**Latest Achievement**: Where-Object and ForEach-Object with script block support, Array literals  
+**Current Phase**: Week 14 Complete - Object Pipeline Milestone Reached! 🎉🎉🎉  
+**Latest Achievement**: Complete end-to-end object pipeline with Get-Process, filtering, projection, and transformation  
 **Target 1.0**: Week 36 (Production-ready interpreter)
 
-### What Works Now (Week 11)
+### What Works Now (Week 14 - Phase 3 Complete!)
 - ✅ Complete lexer and parser
 - ✅ Runtime evaluation engine
-- ✅ Object-based pipeline execution
+- ✅ **Object-based pipeline execution (MILESTONE!)**
 - ✅ 5 core cmdlets (Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object)
-- ✅ **Script block support in cmdlets**
-- ✅ **Where-Object with filtering logic**
-- ✅ **ForEach-Object with transformation logic**
-- ✅ **Array literals (@(items))**
+- ✅ **Get-Process with process objects**
+- ✅ **Where-Object with script block filtering**
+- ✅ **Select-Object with property projection**
+- ✅ **ForEach-Object with transformation**
+- ✅ **Complete pipeline: Get-Process | Where-Object | Select-Object**
+- ✅ Script block support in cmdlets
+- ✅ Array literals (@(items))
 - ✅ Variables and expressions
 - ✅ String interpolation
 - ✅ Control flow (if/else)
@@ -194,6 +197,11 @@ $selected | ForEach-Object { Write-Output "$($_.Name): $($_.CPU)" }
 ### Phase 3: Object Pipeline (Weeks 10-14)
 - Object system, core cmdlets, full pipeline
 - **Week 10 Complete** ✅
+- **Week 11 Complete** ✅
+- **Week 12 Complete** ✅
+- **Week 13 Complete** ✅
+- **Week 14 Complete** ✅
+- **🎉 OBJECT PIPELINE MILESTONE REACHED! 🎉**
 
 ### Phase 4: Built-in Cmdlets (Weeks 15-20)
 - File system, object manipulation, utility cmdlets
@@ -340,9 +348,28 @@ We welcome contributions! See our contribution guidelines:
 - [x] Where-Object with script block filtering
 - [x] ForEach-Object with script block transformation
 - [x] Script block support in cmdlets
-- [x] 96 total tests passing
-- [x] 7 new tests added
-- [x] Week 11 success criteria verified: `@(1,2,3,4,5) | Where-Object { $_ -gt 2 }` ✅
+- [x] Success criteria verified: `@(1,2,3,4,5) | Where-Object { $_ -gt 2 }` ✅
+
+### Week 12 Success - ✅ ACHIEVED
+- [x] Select-Object cmdlet with property projection
+- [x] -First and -Last parameters working
+- [x] Multiple property selection
+- [x] Success criteria verified: `$objects | Select-Object Name, CPU` ✅
+
+### Week 13 Success - ✅ ACHIEVED
+- [x] ForEach-Object cmdlet with script block transformation
+- [x] -MemberName parameter for property extraction
+- [x] Pipeline integration with $_
+- [x] Success criteria verified: `@(1..10) | ForEach-Object { $_ * 2 }` ✅
+
+### Week 14 Success - ✅ ACHIEVED - 🎉 MILESTONE! 🎉
+- [x] Get-Process cmdlet with process objects
+- [x] -Name parameter filtering
+- [x] Complete object pipeline working
+- [x] 235 total tests passing
+- [x] 3 new success criteria tests added
+- [x] Success criteria verified: `Get-Process | Where-Object { $_.CPU -gt 10 } | Select-Object Name, CPU` ✅
+- [x] **OBJECT PIPELINE MILESTONE REACHED!**
 
 ### Beta Success (Week 26)
 - [ ] 30+ cmdlets
