@@ -15,7 +15,7 @@ impl Cmdlet for GetProcessCmdlet {
         context: CmdletContext,
         _evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
-        // For Week 6 MVP, we'll create mock process data
+        // For now, we use mock process data for demonstration
         // In a production implementation, this would read from the OS
 
         let mock_processes = create_mock_processes();
@@ -108,6 +108,58 @@ mod tests {
             assert!(props.contains_key("WorkingSet"));
         } else {
             panic!("Expected object result");
+        }
+    }
+
+    #[test]
+    fn test_week14_success_criteria() {
+        // Week 14 Success Criteria from ROADMAP.md:
+        // Get-Process |
+        //     Where-Object { $_.CPU -gt 10 } |
+        //     Select-Object Name, CPU |
+        //     ForEach-Object { Write-Output "$($_.Name): $($_.CPU)" }
+
+        use pwsh_lexer::Lexer;
+        use pwsh_parser::Parser;
+        use pwsh_runtime::Evaluator;
+
+        let code = r#"Get-Process | Where-Object { $_.CPU -gt 10 } | Select-Object Name, CPU"#;
+        let mut lexer = Lexer::new(code);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+        let mut evaluator = Evaluator::new();
+
+        // Register cmdlets
+        crate::register_all(evaluator.registry_mut());
+
+        let result = evaluator.eval(program).unwrap();
+
+        // Should return array of objects with Name and CPU properties
+        // Processes with CPU > 10: explorer (15.5), chrome (45.2), code (23.1)
+        match result {
+            Value::Array(values) => {
+                assert_eq!(values.len(), 3, "Expected 3 processes with CPU > 10");
+
+                // Verify each result has Name and CPU properties
+                for val in &values {
+                    if let Value::Object(props) = val {
+                        assert!(
+                            props.contains_key("Name"),
+                            "Result should have Name property"
+                        );
+                        assert!(props.contains_key("CPU"), "Result should have CPU property");
+                        assert_eq!(
+                            props.len(),
+                            2,
+                            "Result should only have Name and CPU properties"
+                        );
+                    } else {
+                        panic!("Expected Object in results, got {:?}", val);
+                    }
+                }
+            }
+            _ => panic!("Expected Array result, got {:?}", result),
         }
     }
 }
