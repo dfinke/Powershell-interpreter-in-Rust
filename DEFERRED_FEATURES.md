@@ -402,7 +402,7 @@ Deferred beyond initial release:
 20. ConvertTo-Json
 21. ConvertFrom-Json
 
-**Additional (10 cmdlets to reach 30+):**
+**Additional (9 cmdlets to reach 30+):**
 22. Set-Variable
 23. Get-Variable
 24. Clear-Host
@@ -410,11 +410,10 @@ Deferred beyond initial release:
 26. New-Object
 27. Add-Member
 28. Remove-Variable
-29. Test-Path
-30. Join-Path
-31. Split-Path
+29. Join-Path
+30. Split-Path
 
-**Total:** 31 cmdlets (5 current + 26 new) = **31 cmdlets by Week 26** ✅
+**Total:** 30 cmdlets (5 current + 25 new) = **30 cmdlets by Week 26** ✅
 
 ---
 
