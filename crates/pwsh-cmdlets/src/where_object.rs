@@ -100,4 +100,37 @@ mod tests {
         assert_eq!(result[0], Value::Object(obj1));
         assert_eq!(result[1], Value::Object(obj3));
     }
+
+    #[test]
+    fn test_week11_success_criteria() {
+        // Week 11 Success Criteria from ROADMAP.md:
+        // @(1,2,3,4,5) | Where-Object { $_ -gt 2 }  # 3,4,5
+        
+        use pwsh_lexer::Lexer;
+        use pwsh_parser::Parser;
+        use pwsh_runtime::Evaluator;
+
+        let code = "@(1,2,3,4,5) | Where-Object { $_ -gt 2 }";
+        let mut lexer = Lexer::new(code);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+        let mut evaluator = Evaluator::new();
+        
+        // Register cmdlets
+        crate::register_all(evaluator.registry_mut());
+        
+        let result = evaluator.eval(program).unwrap();
+        
+        // Should return [3, 4, 5]
+        match result {
+            Value::Array(values) => {
+                assert_eq!(values.len(), 3);
+                assert_eq!(values[0], Value::Number(3.0));
+                assert_eq!(values[1], Value::Number(4.0));
+                assert_eq!(values[2], Value::Number(5.0));
+            }
+            _ => panic!("Expected Array result, got {:?}", result),
+        }
+    }
 }

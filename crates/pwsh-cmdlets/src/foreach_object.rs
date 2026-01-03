@@ -85,4 +85,38 @@ mod tests {
         assert_eq!(result[0], Value::String("Object1".to_string()));
         assert_eq!(result[1], Value::String("Object2".to_string()));
     }
+
+    #[test]
+    fn test_week13_success_criteria() {
+        // Week 13 Success Criteria from ROADMAP.md:
+        // 1..10 | ForEach-Object { $_ * 2 }
+        
+        // Note: Range operator (1..10) not yet implemented, so we'll use @(1,2,3,4,5,6,7,8,9,10)
+        use pwsh_lexer::Lexer;
+        use pwsh_parser::Parser;
+        use pwsh_runtime::Evaluator;
+
+        let code = "@(1,2,3,4,5,6,7,8,9,10) | ForEach-Object { $_ * 2 }";
+        let mut lexer = Lexer::new(code);
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let program = parser.parse().unwrap();
+        let mut evaluator = Evaluator::new();
+        
+        // Register cmdlets
+        crate::register_all(evaluator.registry_mut());
+        
+        let result = evaluator.eval(program).unwrap();
+        
+        // Should return [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+        match result {
+            Value::Array(values) => {
+                assert_eq!(values.len(), 10);
+                for (i, val) in values.iter().enumerate() {
+                    assert_eq!(*val, Value::Number(((i + 1) * 2) as f64));
+                }
+            }
+            _ => panic!("Expected Array result, got {:?}", result),
+        }
+    }
 }
