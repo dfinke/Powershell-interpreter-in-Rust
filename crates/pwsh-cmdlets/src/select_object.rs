@@ -54,7 +54,7 @@ impl Cmdlet for SelectObjectCmdlet {
             // Select only specified properties from each object
             let mut results = Vec::new();
             for item in input {
-                match &item {
+                match item {
                     Value::Object(_) => {
                         let mut new_obj = HashMap::new();
                         for prop_name in &properties {
