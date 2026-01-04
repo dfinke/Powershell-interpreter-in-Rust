@@ -396,8 +396,8 @@ impl Evaluator {
             Expression::Call { name, arguments } => {
                 // This is a cmdlet call - execute it with empty pipeline input
                 let results = self.execute_cmdlet_call(&name, &arguments, vec![])?;
-                // Return the last value or Null
-                Ok(results.last().cloned().unwrap_or(Value::Null))
+                // Return pipeline-style results: Null, single value, or Array
+                Ok(Self::pipeline_results_to_value(results))
             }
 
             Expression::ScriptBlock(block) => {
