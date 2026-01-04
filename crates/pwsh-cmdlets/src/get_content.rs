@@ -65,7 +65,7 @@ fn parse_encoding(value: Option<&Value>) -> Result<Option<&'static Encoding>, Ru
             ));
         }
 
-        other if other.is_empty() => None,
+        "" => None,
         other => {
             return Err(RuntimeError::InvalidOperation(format!(
                 "Unsupported encoding: {}",
