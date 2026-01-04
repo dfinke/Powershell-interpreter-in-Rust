@@ -70,7 +70,7 @@ fn wildcard_match_case_insensitive(pattern: &str, text: &str) -> bool {
 
     while ti < t.len() {
         if pi < p.len()
-            && (p[pi] == b'?' || p[pi].to_ascii_lowercase() == t[ti].to_ascii_lowercase())
+            && (p[pi] == b'?' || p[pi].eq_ignore_ascii_case(&t[ti]))
         {
             pi += 1;
             ti += 1;
@@ -130,7 +130,7 @@ fn build_mode_string(metadata: &fs::Metadata) -> String {
         for (mask, ch) in bits {
             s.push(if (mode & mask) != 0 { ch } else { '-' });
         }
-        return s;
+        s
     }
 
     #[cfg(not(unix))]
