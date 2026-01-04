@@ -2,6 +2,7 @@
 use encoding_rs::Encoding;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use pwsh_runtime::{Cmdlet, CmdletContext, RuntimeError, Value};
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -77,10 +78,52 @@ fn parse_encoding(value: Option<&Value>) -> Result<Option<&'static Encoding>, Ru
     Ok(enc)
 }
 
-fn read_lines(
+fn parse_count_param(context: &CmdletContext, name: &str) -> Result<Option<usize>, RuntimeError> {
+    let Some(v) = get_parameter_ci(context, name) else {
+        return Ok(None);
+    };
+
+    let n = match v {
+        Value::Number(n) => *n,
+        Value::String(s) => s.trim().parse::<f64>().map_err(|_| {
+            RuntimeError::InvalidOperation(format!(
+                "{name} must be a non-negative integer, got: {s}"
+            ))
+        })?,
+        other => {
+            return Err(RuntimeError::InvalidOperation(format!(
+                "{name} must be a non-negative integer, got: {other}"
+            )))
+        }
+    };
+
+    if n.is_nan() || n.is_infinite() || n < 0.0 || n.fract() != 0.0 {
+        return Err(RuntimeError::InvalidOperation(format!(
+            "{name} must be a non-negative integer, got: {n}"
+        )));
+    }
+
+    if n > (usize::MAX as f64) {
+        return Err(RuntimeError::InvalidOperation(format!(
+            "{name} is too large: {n}"
+        )));
+    }
+
+    Ok(Some(n as usize))
+}
+
+fn read_lines_filtered(
     path: &Path,
     encoding: Option<&'static Encoding>,
+    total_count: Option<usize>,
+    tail: Option<usize>,
 ) -> Result<Vec<Value>, RuntimeError> {
+    if total_count.is_some() && tail.is_some() {
+        return Err(RuntimeError::InvalidOperation(
+            "Get-Content does not support using -TotalCount and -Tail together".to_string(),
+        ));
+    }
+
     let file = File::open(path).map_err(|e| {
         RuntimeError::InvalidOperation(format!("Failed to open file '{}': {}", path.display(), e))
     })?;
@@ -96,9 +139,38 @@ fn read_lines(
 
     let decoded = builder.build(file);
     let reader = BufReader::new(decoded);
-    let mut out = Vec::new();
 
-    for line in reader.lines() {
+    if total_count == Some(0) || tail == Some(0) {
+        return Ok(vec![]);
+    }
+
+    // -Tail N: keep only the last N lines
+    if let Some(tail) = tail {
+        let mut buf: VecDeque<Value> = VecDeque::with_capacity(tail.max(1));
+
+        for line in reader.lines() {
+            let line = line.map_err(|e| {
+                RuntimeError::InvalidOperation(format!(
+                    "Failed to read file '{}': {}",
+                    path.display(),
+                    e
+                ))
+            })?;
+
+            buf.push_back(Value::String(line));
+            if buf.len() > tail {
+                buf.pop_front();
+            }
+        }
+
+        return Ok(buf.into_iter().collect());
+    }
+
+    // Default / -TotalCount: collect (streaming) and optionally stop early
+    let mut out = Vec::new();
+    let max_take = total_count.unwrap_or(usize::MAX);
+
+    for (taken, line) in reader.lines().enumerate() {
         let line = line.map_err(|e| {
             RuntimeError::InvalidOperation(format!(
                 "Failed to read file '{}': {}",
@@ -106,6 +178,11 @@ fn read_lines(
                 e
             ))
         })?;
+
+        if taken >= max_take {
+            break;
+        }
+
         out.push(Value::String(line));
     }
 
@@ -127,6 +204,12 @@ impl Cmdlet for GetContentCmdlet {
     ) -> Result<Vec<Value>, RuntimeError> {
         let encoding = parse_encoding(get_parameter_ci(&context, "Encoding"))?;
 
+        // Align with native PowerShell:
+        // -TotalCount N (first N lines)
+        // -Tail N (last N lines)
+        let total_count = parse_count_param(&context, "TotalCount")?;
+        let tail = parse_count_param(&context, "Tail")?;
+
         // Get path from parameters or arguments
         let path = if let Some(Value::String(p)) = get_parameter_ci(&context, "Path") {
             resolve_path(p)?
@@ -138,7 +221,7 @@ impl Cmdlet for GetContentCmdlet {
             ));
         };
 
-        read_lines(&path, encoding)
+        read_lines_filtered(&path, encoding, total_count, tail)
     }
 }
 
@@ -253,5 +336,119 @@ mod tests {
         assert!(result.is_err());
         let msg = result.err().unwrap().to_string();
         assert!(msg.to_ascii_lowercase().contains("unsupported encoding"));
+    }
+
+    #[test]
+    fn test_get_content_total_count() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("lines.txt");
+        fs::write(&file_path, "one\ntwo\nthree\nfour\nfive\n").unwrap();
+
+        let cmdlet = GetContentCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(file_path.to_string_lossy().to_string()),
+            )
+            .with_parameter("TotalCount".to_string(), Value::Number(2.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+
+        assert_eq!(
+            result,
+            vec![
+                Value::String("one".to_string()),
+                Value::String("two".to_string())
+            ]
+        );
+    }
+
+    #[test]
+    fn test_get_content_tail() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("lines.txt");
+        fs::write(&file_path, "one\ntwo\nthree\nfour\nfive\n").unwrap();
+
+        let cmdlet = GetContentCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(file_path.to_string_lossy().to_string()),
+            )
+            .with_parameter("Tail".to_string(), Value::Number(2.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+
+        assert_eq!(
+            result,
+            vec![
+                Value::String("four".to_string()),
+                Value::String("five".to_string())
+            ]
+        );
+    }
+
+    #[test]
+    fn test_get_content_total_count_and_tail_error() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("lines.txt");
+        fs::write(&file_path, "one\ntwo\nthree\n").unwrap();
+
+        let cmdlet = GetContentCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(file_path.to_string_lossy().to_string()),
+            )
+            .with_parameter("TotalCount".to_string(), Value::Number(1.0))
+            .with_parameter("Tail".to_string(), Value::Number(1.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator);
+
+        assert!(result.is_err());
+        let msg = result.err().unwrap().to_string().to_ascii_lowercase();
+        assert!(msg.contains("totalcount") && msg.contains("tail"));
+    }
+
+    #[test]
+    fn test_get_content_negative_total_count_errors() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("lines.txt");
+        fs::write(&file_path, "one\ntwo\n").unwrap();
+
+        let cmdlet = GetContentCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(file_path.to_string_lossy().to_string()),
+            )
+            .with_parameter("TotalCount".to_string(), Value::Number(-1.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator);
+
+        assert!(result.is_err());
+        let msg = result.err().unwrap().to_string().to_ascii_lowercase();
+        assert!(msg.contains("totalcount") && msg.contains("non-negative"));
+    }
+
+    #[test]
+    fn test_get_content_fractional_tail_errors() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("lines.txt");
+        fs::write(&file_path, "one\ntwo\n").unwrap();
+
+        let cmdlet = GetContentCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(file_path.to_string_lossy().to_string()),
+            )
+            .with_parameter("Tail".to_string(), Value::Number(1.5));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator);
+
+        assert!(result.is_err());
+        let msg = result.err().unwrap().to_string().to_ascii_lowercase();
+        assert!(msg.contains("tail") && msg.contains("non-negative"));
     }
 }
