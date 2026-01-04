@@ -194,9 +194,9 @@ impl Prompt for PowerShellPrompt {
 
 fn main() -> std::io::Result<()> {
     println!("PowerShell Interpreter - Modern REPL");
-    println!("Object Pipeline with 6 Cmdlets!");
+    println!("Object Pipeline with 7 Cmdlets!");
     println!(
-        "Available cmdlets: Write-Output, Get-Process, Get-ChildItem, Where-Object, Select-Object, ForEach-Object"
+        "Available cmdlets: Write-Output, Get-Process, Get-ChildItem, Get-Content, Where-Object, Select-Object, ForEach-Object"
     );
     println!("Type 'exit' to quit, or use Ctrl+D.\n");
 
@@ -238,6 +238,7 @@ fn main() -> std::io::Result<()> {
         "Write-Output".to_string(),
         "Get-Process".to_string(),
         "Get-ChildItem".to_string(),
+        "Get-Content".to_string(),
         "Where-Object".to_string(),
         "Select-Object".to_string(),
         "ForEach-Object".to_string(),
@@ -424,5 +425,21 @@ mod tests {
         let completions = completer.complete("wh", 2);
         assert_eq!(completions.len(), 1);
         assert_eq!(completions[0].value, "Where-Object");
+    }
+
+    #[test]
+    fn test_get_content_completion() {
+        let commands = vec![
+            "Get-ChildItem".to_string(),
+            "Get-Content".to_string(),
+            "Get-Process".to_string(),
+        ];
+        let mut completer = PowerShellCompleter::new(commands);
+
+        // "get-c" should match both Get-ChildItem and Get-Content
+        let completions = completer.complete("get-c", 5);
+        assert_eq!(completions.len(), 2);
+        assert_eq!(completions[0].value, "Get-ChildItem");
+        assert_eq!(completions[1].value, "Get-Content");
     }
 }
