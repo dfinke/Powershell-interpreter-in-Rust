@@ -70,8 +70,7 @@ fn wildcard_match_case_insensitive(pattern: &str, text: &str) -> bool {
 
     while ti < t.len() {
         if pi < p.len()
-            && (p[pi] == b'?'
-                || p[pi].to_ascii_lowercase() == t[ti].to_ascii_lowercase())
+            && (p[pi] == b'?' || p[pi].to_ascii_lowercase() == t[ti].to_ascii_lowercase())
         {
             pi += 1;
             ti += 1;
@@ -174,7 +173,11 @@ fn build_file_object(path: &Path, name: String) -> Result<Value, RuntimeError> {
 
     let is_dir = metadata.is_dir();
 
-    let length = if metadata.is_file() { metadata.len() as f64 } else { 0.0 };
+    let length = if metadata.is_file() {
+        metadata.len() as f64
+    } else {
+        0.0
+    };
     let last_write_time = metadata
         .modified()
         .map(system_time_to_unix_epoch_seconds)
@@ -409,20 +412,29 @@ mod tests {
     fn test_get_childitem_nonexistent_directory() {
         // Test error handling for non-existent directory
         let cmdlet = GetChildItemCmdlet;
-        let nonexistent_path = std::path::PathBuf::from("C:").join("definitely").join("nonexistent").join("directory").join("path");
-        let context = CmdletContext::new()
-            .with_arguments(vec![Value::String(nonexistent_path.to_string_lossy().to_string())]);
+        let nonexistent_path = std::path::PathBuf::from("C:")
+            .join("definitely")
+            .join("nonexistent")
+            .join("directory")
+            .join("path");
+        let context = CmdletContext::new().with_arguments(vec![Value::String(
+            nonexistent_path.to_string_lossy().to_string(),
+        )]);
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator);
 
         // Verify that it returns an error
-        assert!(result.is_err(), "Should return error for non-existent directory");
-        
+        assert!(
+            result.is_err(),
+            "Should return error for non-existent directory"
+        );
+
         // Verify the error message contains relevant information
         if let Err(e) = result {
             let error_msg = e.to_string();
             assert!(
-                error_msg.contains("Failed to read directory") || error_msg.contains("The system cannot find the path specified"),
+                error_msg.contains("Failed to read directory")
+                    || error_msg.contains("The system cannot find the path specified"),
                 "Error message should indicate directory read failure: {}",
                 error_msg
             );
@@ -559,19 +571,28 @@ mod tests {
 
         // -Filter
         let context = CmdletContext::new()
-            .with_parameter("Path".to_string(), Value::String(temp_path.to_string_lossy().to_string()))
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(temp_path.to_string_lossy().to_string()),
+            )
             .with_parameter("Filter".to_string(), Value::String("*.rs".to_string()));
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 1);
         if let Value::Object(props) = &result[0] {
-            assert_eq!(props.get("Name"), Some(&Value::String("file2.rs".to_string())));
+            assert_eq!(
+                props.get("Name"),
+                Some(&Value::String("file2.rs".to_string()))
+            );
         } else {
             panic!("Expected object");
         }
 
         // -Include/-Exclude
         let context = CmdletContext::new()
-            .with_parameter("Path".to_string(), Value::String(temp_path.to_string_lossy().to_string()))
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(temp_path.to_string_lossy().to_string()),
+            )
             .with_parameter(
                 "Include".to_string(),
                 Value::Array(vec![
@@ -579,14 +600,14 @@ mod tests {
                     Value::String("*.txt".to_string()),
                 ]),
             )
-            .with_parameter(
-                "Exclude".to_string(),
-                Value::String("README*".to_string()),
-            );
+            .with_parameter("Exclude".to_string(), Value::String("README*".to_string()));
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 1);
         if let Value::Object(props) = &result[0] {
-            assert_eq!(props.get("Name"), Some(&Value::String("file1.txt".to_string())));
+            assert_eq!(
+                props.get("Name"),
+                Some(&Value::String("file1.txt".to_string()))
+            );
         } else {
             panic!("Expected object");
         }

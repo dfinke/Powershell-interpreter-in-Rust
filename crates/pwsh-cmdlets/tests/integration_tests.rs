@@ -477,7 +477,10 @@ fn test_week15_get_childitem_filter_include_exclude_integration() {
     };
     assert_eq!(items.len(), 1);
     if let Value::Object(props) = &items[0] {
-        assert_eq!(props.get("Name"), Some(&Value::String("file2.rs".to_string())));
+        assert_eq!(
+            props.get("Name"),
+            Some(&Value::String("file2.rs".to_string()))
+        );
     } else {
         panic!("Expected object");
     }
@@ -494,7 +497,10 @@ fn test_week15_get_childitem_filter_include_exclude_integration() {
     };
     assert_eq!(items.len(), 1);
     if let Value::Object(props) = &items[0] {
-        assert_eq!(props.get("Name"), Some(&Value::String("file1.txt".to_string())));
+        assert_eq!(
+            props.get("Name"),
+            Some(&Value::String("file1.txt".to_string()))
+        );
     } else {
         panic!("Expected object");
     }
