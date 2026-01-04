@@ -163,21 +163,21 @@ Get-Content /path/to/file.txt
 - **Time**: 8-10 hours
 
 ##### Chunk 3: Filtering Parameters (Day 3)
-- **Task**: Add -First, -Last, -Skip parameters
+- **Task**: Add -TotalCount, -Tail parameters (PowerShell-aligned)
 - **Scope**:
-  - -First N: Return first N lines
-  - -Last N: Return last N lines  
-  - -Skip N: Skip first N lines
+  - -TotalCount N: Return first N lines
+  - -Tail N: Return last N lines
+  - For skipping lines, use `Select-Object -Skip` in the pipeline
 - **Tests**:
   - Test each parameter
-  - Test combinations
+  - Test invalid combinations
 - **Time**: 6-8 hours
 
 **Example:**
 ```powershell
-Get-Content file.txt -First 10
-Get-Content file.txt -Last 5
-Get-Content file.txt -Skip 2 -First 10
+Get-Content 'file.txt' -TotalCount 10
+Get-Content 'file.txt' -Tail 5
+Get-Content 'file.txt' | Select-Object -Skip 2 -First 10
 ```
 
 ##### Chunk 4: Set-Content Implementation (Day 4-5)
