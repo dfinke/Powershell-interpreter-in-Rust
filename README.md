@@ -13,6 +13,7 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ Runtime evaluation engine
 - ✅ **Object-based pipeline execution (MILESTONE!)**
 - ✅ 5 core cmdlets (Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object)
+- ✅ Phase 4 started: **Get-ChildItem** (filesystem listing) with `-Path`, `-Filter`, `-Include`, `-Exclude`, `-Recurse`, and `-Depth`
 - ✅ **Get-Process with process objects**
 - ✅ **Where-Object with script block filtering**
 - ✅ **Select-Object with property projection**

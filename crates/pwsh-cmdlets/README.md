@@ -4,13 +4,14 @@ This module provides the built-in cmdlets for the PowerShell interpreter.
 
 ## Overview
 
-The cmdlets module implements the five core cmdlets needed for the Week 6 MVP:
+The cmdlets module implements the five core cmdlets needed for the Week 6 MVP, plus additional cmdlets added in later phases:
 
 1. **Write-Output** - Output values to the pipeline
 2. **Get-Process** - List system processes
 3. **Where-Object** - Filter pipeline objects
 4. **Select-Object** - Select object properties
 5. **ForEach-Object** - Process each pipeline object
+6. **Get-ChildItem** - List files and directories
 
 ## Architecture
 
@@ -43,6 +44,7 @@ pub fn register_all(registry: &mut pwsh_runtime::CmdletRegistry) {
     registry.register(Box::new(SelectObjectCmdlet));
     registry.register(Box::new(ForEachObjectCmdlet));
     registry.register(Box::new(GetProcessCmdlet));
+    registry.register(Box::new(GetChildItemCmdlet));
 }
 ```
 
@@ -92,6 +94,45 @@ Get-Process -Name "chrome"
 **Note:** Currently returns mock data for demonstration. Real OS integration will be added in Phase 4.
 
 **Implementation:** `src/get_process.rs`
+
+### Get-ChildItem
+
+Lists files and directories on the filesystem (similar to `ls` / `dir`).
+
+**Syntax:**
+```powershell
+Get-ChildItem
+Get-ChildItem -Path <path>
+Get-ChildItem -Filter <pattern>
+Get-ChildItem -Include <pattern[,pattern...]> -Exclude <pattern[,pattern...]>
+Get-ChildItem -Recurse
+Get-ChildItem -Recurse -Depth <n>
+```
+
+**Parameters (current implementation):**
+- `-Path` (string): Directory to list. If omitted, lists the current directory.
+- `-Filter` (string): Simple wildcard match against item names (e.g. `*.rs`).
+- `-Include` (string or list): Include patterns.
+- `-Exclude` (string or list): Exclude patterns.
+- `-Recurse` (switch): Recursively traverse subdirectories.
+- `-Depth` (number): Maximum recursion depth (only meaningful with `-Recurse`).
+
+**Returns:** Objects with properties:
+- `Name` - Item name
+- `Length` - File length (0 for directories)
+- `LastWriteTime` - Last modified timestamp
+- `Mode` - Mode string (platform-specific)
+- `Directory` - Parent directory path
+
+**Examples:**
+```powershell
+Get-ChildItem
+Get-ChildItem -Path "./crates"
+Get-ChildItem -Path "./crates" -Filter "*.rs"
+Get-ChildItem -Path "./crates" -Recurse -Depth 2
+```
+
+**Implementation:** `src/get_childitem.rs`
 
 ### Where-Object
 
@@ -248,3 +289,6 @@ Each cmdlet is documented with:
 - All 5 core cmdlets implemented
 - All tests passing (13 unit + 9 integration)
 - Ready for Phase 2 enhancements
+
+✅ Phase 4 In Progress
+- Get-ChildItem implemented with filtering and recursion
