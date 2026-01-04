@@ -549,7 +549,10 @@ fn test_week16_get_content_reads_empty_file() {
             // Current evaluator behavior: when a cmdlet produces no output values,
             // the statement evaluates to $null.
         }
-        other => panic!("Expected array or Null result from Get-Content, got {:?}", other),
+        other => panic!(
+            "Expected array or Null result from Get-Content, got {:?}",
+            other
+        ),
     }
 }
 
@@ -565,4 +568,33 @@ fn test_week16_get_content_nonexistent_file_errors() {
     assert!(result.is_err());
     let msg = result.err().unwrap().to_string();
     assert!(msg.contains("Failed to open file") || msg.contains("Failed to read file"));
+}
+
+#[test]
+fn test_week16_get_content_with_encoding_unicode_utf16le() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("utf16.txt");
+
+    // Write UTF-16LE with BOM.
+    let s = "one\ntwo\n";
+    let mut bytes: Vec<u8> = vec![0xFF, 0xFE];
+    for u in s.encode_utf16() {
+        bytes.push((u & 0x00FF) as u8);
+        bytes.push((u >> 8) as u8);
+    }
+    fs::write(&file_path, bytes).unwrap();
+
+    // NOTE: The lexer treats backslashes as escape sequences, so normalize to forward slashes.
+    let path_str = file_path.to_string_lossy().replace('\\', "/");
+    let code = format!("Get-Content -Path '{}' -Encoding 'Unicode'", path_str);
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(
+            items,
+            vec![Value::String("one".to_string()), Value::String("two".to_string())]
+        );
+    } else {
+        panic!("Expected array result from Get-Content, got {:?}", result);
+    }
 }
