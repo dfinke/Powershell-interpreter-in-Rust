@@ -350,7 +350,7 @@ fn test_select_object_get_process_case_insensitive() {
     let result = eval_with_cmdlets(code).unwrap();
 
     if let Value::Array(items) = result {
-        assert!(items.len() > 0);
+        assert!(!items.is_empty());
         for item in items {
             if let Value::Object(props) = item {
                 assert!(
@@ -402,7 +402,7 @@ fn test_week15_get_childitem_with_select() {
 
     // Result should be an array
     if let Value::Array(items) = result {
-        assert!(items.len() > 0, "Should return at least some items");
+        assert!(!items.is_empty(), "Should return at least some items");
 
         // Each item should only have Name property
         for item in items {
