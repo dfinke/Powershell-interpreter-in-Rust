@@ -505,3 +505,64 @@ fn test_week15_get_childitem_filter_include_exclude_integration() {
         panic!("Expected object");
     }
 }
+
+// Week 16: Get-Content - Integration Tests
+
+#[test]
+fn test_week16_get_content_reads_text_file() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("sample.txt");
+    fs::write(&file_path, "one\ntwo\nthree\n").unwrap();
+
+    // NOTE: The lexer treats backslashes as escape sequences, so normalize to forward slashes.
+    let path_str = file_path.to_string_lossy().replace('\\', "/");
+    let code = format!("Get-Content -Path '{}'", path_str);
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(
+            items,
+            vec![
+                Value::String("one".to_string()),
+                Value::String("two".to_string()),
+                Value::String("three".to_string())
+            ]
+        );
+    } else {
+        panic!("Expected array result from Get-Content, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_week16_get_content_reads_empty_file() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("empty.txt");
+    fs::write(&file_path, "").unwrap();
+
+    let path_str = file_path.to_string_lossy().replace('\\', "/");
+    let code = format!("Get-Content '{}'", path_str);
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    match result {
+        Value::Array(items) => assert!(items.is_empty()),
+        Value::Null => {
+            // Current evaluator behavior: when a cmdlet produces no output values,
+            // the statement evaluates to $null.
+        }
+        other => panic!("Expected array or Null result from Get-Content, got {:?}", other),
+    }
+}
+
+#[test]
+fn test_week16_get_content_nonexistent_file_errors() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("does_not_exist.txt");
+
+    let path_str = file_path.to_string_lossy().replace('\\', "/");
+    let code = format!("Get-Content '{}'", path_str);
+    let result = eval_with_cmdlets(&code);
+
+    assert!(result.is_err());
+    let msg = result.err().unwrap().to_string();
+    assert!(msg.contains("Failed to open file") || msg.contains("Failed to read file"));
+}
