@@ -194,10 +194,9 @@ impl Prompt for PowerShellPrompt {
 
 fn main() -> std::io::Result<()> {
     println!("PowerShell Interpreter - Modern REPL");
-    println!("Object Pipeline with 7 Cmdlets!");
-    println!(
-        "Available cmdlets: Write-Output, Get-Process, Get-ChildItem, Get-Content, Where-Object, Select-Object, ForEach-Object"
-    );
+    let cmdlets = pwsh_cmdlets::cmdlet_names();
+    println!("Object Pipeline with {} Cmdlets!", cmdlets.len());
+    println!("Available cmdlets: {}", cmdlets.join(", "));
     println!("Type 'exit' to quit, or use Ctrl+D.\n");
 
     // Create evaluator and register all cmdlets
@@ -234,16 +233,8 @@ fn main() -> std::io::Result<()> {
     );
 
     // Add a case-insensitive completer for cmdlets
-    let commands = vec![
-        "Write-Output".to_string(),
-        "Get-Process".to_string(),
-        "Get-ChildItem".to_string(),
-        "Get-Content".to_string(),
-        "Where-Object".to_string(),
-        "Select-Object".to_string(),
-        "ForEach-Object".to_string(),
-        "exit".to_string(),
-    ];
+    let mut commands = cmdlets;
+    commands.push("exit".to_string());
     let completer = Box::new(PowerShellCompleter::new(commands));
 
     // Set up the line editor
@@ -441,5 +432,15 @@ mod tests {
         assert_eq!(completions.len(), 2);
         assert_eq!(completions[0].value, "Get-ChildItem");
         assert_eq!(completions[1].value, "Get-Content");
+    }
+
+    #[test]
+    fn test_cmdlet_names_include_set_content_for_autocomplete() {
+        let mut commands = pwsh_cmdlets::cmdlet_names();
+        commands.push("exit".to_string());
+        let mut completer = PowerShellCompleter::new(commands);
+
+        let completions = completer.complete("set", 3);
+        assert!(completions.iter().any(|c| c.value == "Set-Content"));
     }
 }
