@@ -411,8 +411,8 @@ mod tests {
             Value::Number(4.0),
             Value::Number(5.0),
         ];
-        let context = CmdletContext::with_input(input)
-            .with_parameter("Skip".to_string(), Value::Number(2.0));
+        let context =
+            CmdletContext::with_input(input).with_parameter("Skip".to_string(), Value::Number(2.0));
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(
