@@ -174,4 +174,27 @@ mod tests {
         assert!(found_file, "Should find file.txt");
         assert!(found_dir, "Should find subdir directory");
     }
+
+    #[test]
+    fn test_get_childitem_nonexistent_directory() {
+        // Test error handling for non-existent directory
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_arguments(vec![Value::String("/nonexistent/path/that/does/not/exist".to_string())]);
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator);
+
+        // Verify that it returns an error
+        assert!(result.is_err(), "Should return error for non-existent directory");
+        
+        // Verify the error message contains relevant information
+        if let Err(e) = result {
+            let error_msg = e.to_string();
+            assert!(
+                error_msg.contains("Failed to read directory") || error_msg.contains("No such file or directory"),
+                "Error message should indicate directory read failure: {}",
+                error_msg
+            );
+        }
+    }
 }
