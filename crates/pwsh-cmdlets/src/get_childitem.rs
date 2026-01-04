@@ -410,11 +410,13 @@ mod tests {
     fn test_get_childitem_nonexistent_directory() {
         // Test error handling for non-existent directory
         let cmdlet = GetChildItemCmdlet;
-        let nonexistent_path = std::path::PathBuf::from("C:")
-            .join("definitely")
-            .join("nonexistent")
-            .join("directory")
-            .join("path");
+        // Use an absolute path so resolve_path() doesn't accidentally treat Windows-style
+        // paths as relative on Unix.
+        let nonexistent_path = if cfg!(windows) {
+            std::path::PathBuf::from(r"C:\definitely\nonexistent\directory\path")
+        } else {
+            std::path::PathBuf::from("/definitely/nonexistent/directory/path")
+        };
         let context = CmdletContext::new().with_arguments(vec![Value::String(
             nonexistent_path.to_string_lossy().to_string(),
         )]);
@@ -431,8 +433,10 @@ mod tests {
         if let Err(e) = result {
             let error_msg = e.to_string();
             assert!(
-                error_msg.contains("Failed to read directory")
-                    || error_msg.contains("The system cannot find the path specified"),
+                error_msg.contains("Failed to access path")
+                    || error_msg.contains("Failed to read directory")
+                    || error_msg.contains("The system cannot find the path specified")
+                    || error_msg.contains("No such file or directory"),
                 "Error message should indicate directory read failure: {}",
                 error_msg
             );
