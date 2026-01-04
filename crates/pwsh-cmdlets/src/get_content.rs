@@ -39,10 +39,12 @@ fn parse_encoding(value: Option<&Value>) -> Result<Option<&'static Encoding>, Ru
 
     let s = match v {
         Value::String(s) => s.as_str(),
-        other => return Err(RuntimeError::InvalidOperation(format!(
-            "Encoding must be a string, got: {}",
-            other
-        ))),
+        other => {
+            return Err(RuntimeError::InvalidOperation(format!(
+                "Encoding must be a string, got: {}",
+                other
+            )))
+        }
     };
 
     let enc = match s.trim().to_ascii_lowercase().as_str() {
@@ -225,7 +227,10 @@ mod tests {
 
         assert_eq!(
             result,
-            vec![Value::String("one".to_string()), Value::String("two".to_string())]
+            vec![
+                Value::String("one".to_string()),
+                Value::String("two".to_string())
+            ]
         );
     }
 
