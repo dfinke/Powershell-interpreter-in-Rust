@@ -601,3 +601,25 @@ fn test_week16_get_content_with_encoding_unicode_utf16le() {
         panic!("Expected array result from Get-Content, got {:?}", result);
     }
 }
+
+#[test]
+fn test_week16_get_content_with_select_object_skip_first() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("file.txt");
+    fs::write(&file_path, "one\ntwo\nthree\nfour\nfive\n").unwrap();
+
+    let code = format!(
+        "Get-Content '{}' | Select-Object -Skip 2 -First 2",
+        file_path.to_string_lossy().replace('\\', "\\\\")
+    );
+
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0], Value::String("three".to_string()));
+        assert_eq!(items[1], Value::String("four".to_string()));
+    } else {
+        panic!("Expected array result");
+    }
+}

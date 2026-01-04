@@ -2,6 +2,54 @@
 use pwsh_runtime::{Cmdlet, CmdletContext, RuntimeError, Value};
 use std::collections::HashMap;
 
+fn get_parameter_ci<'a>(context: &'a CmdletContext, name: &str) -> Option<&'a Value> {
+    // Try exact match first
+    if let Some(v) = context.parameters.get(name) {
+        return Some(v);
+    }
+
+    let name_lower = name.to_lowercase();
+    context
+        .parameters
+        .iter()
+        .find(|(k, _)| k.to_lowercase() == name_lower)
+        .map(|(_, v)| v)
+}
+
+fn parse_count_param(context: &CmdletContext, name: &str) -> Result<Option<usize>, RuntimeError> {
+    let Some(v) = get_parameter_ci(context, name) else {
+        return Ok(None);
+    };
+
+    let n = match v {
+        Value::Number(n) => *n,
+        Value::String(s) => s.trim().parse::<f64>().map_err(|_| {
+            RuntimeError::InvalidOperation(format!(
+                "{name} must be a non-negative integer, got: {s}"
+            ))
+        })?,
+        other => {
+            return Err(RuntimeError::InvalidOperation(format!(
+                "{name} must be a non-negative integer, got: {other}"
+            )))
+        }
+    };
+
+    if n.is_nan() || n.is_infinite() || n < 0.0 || n.fract() != 0.0 {
+        return Err(RuntimeError::InvalidOperation(format!(
+            "{name} must be a non-negative integer, got: {n}"
+        )));
+    }
+
+    if n > (usize::MAX as f64) {
+        return Err(RuntimeError::InvalidOperation(format!(
+            "{name} is too large: {n}"
+        )));
+    }
+
+    Ok(Some(n as usize))
+}
+
 /// Select-Object cmdlet selects properties from objects
 pub struct SelectObjectCmdlet;
 
@@ -16,9 +64,10 @@ impl Cmdlet for SelectObjectCmdlet {
         _evaluator: &mut pwsh_runtime::Evaluator,
     ) -> Result<Vec<Value>, RuntimeError> {
         // Extract parameters before consuming pipeline_input
-        let property_param = context.parameters.get("Property").cloned();
-        let first_param = context.parameters.get("First").cloned();
-        let last_param = context.parameters.get("Last").cloned();
+        let property_param = get_parameter_ci(&context, "Property").cloned();
+        let first = parse_count_param(&context, "First")?;
+        let last = parse_count_param(&context, "Last")?;
+        let skip = parse_count_param(&context, "Skip")?.unwrap_or(0);
 
         // Start with the pipeline input
         let mut input = context.pipeline_input;
@@ -72,22 +121,21 @@ impl Cmdlet for SelectObjectCmdlet {
             input = results;
         }
 
+        // -Skip: skip N items from the beginning (PowerShell-aligned)
+        if skip > 0 {
+            input = input.into_iter().skip(skip).collect();
+        }
+
         // Check for -First parameter (limit output from the beginning)
-        if let Some(first_value) = first_param {
-            if let Some(count) = first_value.to_number() {
-                let limit = count as usize;
-                return Ok(input.into_iter().take(limit).collect());
-            }
+        if let Some(limit) = first {
+            return Ok(input.into_iter().take(limit).collect());
         }
 
         // Check for -Last parameter (limit output from the end)
-        if let Some(last_value) = last_param {
-            if let Some(count) = last_value.to_number() {
-                let limit = count as usize;
-                let total = input.len();
-                let skip = total.saturating_sub(limit);
-                return Ok(input.into_iter().skip(skip).collect());
-            }
+        if let Some(limit) = last {
+            let total = input.len();
+            let skip = total.saturating_sub(limit);
+            return Ok(input.into_iter().skip(skip).collect());
         }
 
         // No limiting parameters, return all
@@ -351,5 +399,87 @@ mod tests {
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result.len(), 3); // Only 3 objects available, so returns all 3
+    }
+
+    #[test]
+    fn test_select_object_skip() {
+        let cmdlet = SelectObjectCmdlet;
+        let input = vec![
+            Value::Number(1.0),
+            Value::Number(2.0),
+            Value::Number(3.0),
+            Value::Number(4.0),
+            Value::Number(5.0),
+        ];
+        let context = CmdletContext::with_input(input)
+            .with_parameter("Skip".to_string(), Value::Number(2.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+        assert_eq!(
+            result,
+            vec![Value::Number(3.0), Value::Number(4.0), Value::Number(5.0)]
+        );
+    }
+
+    #[test]
+    fn test_select_object_skip_then_first() {
+        let cmdlet = SelectObjectCmdlet;
+        let input = vec![
+            Value::Number(1.0),
+            Value::Number(2.0),
+            Value::Number(3.0),
+            Value::Number(4.0),
+            Value::Number(5.0),
+        ];
+        let context = CmdletContext::with_input(input)
+            .with_parameter("Skip".to_string(), Value::Number(2.0))
+            .with_parameter("First".to_string(), Value::Number(2.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+        assert_eq!(result, vec![Value::Number(3.0), Value::Number(4.0)]);
+    }
+
+    #[test]
+    fn test_select_object_skip_then_last() {
+        let cmdlet = SelectObjectCmdlet;
+        let input = vec![
+            Value::Number(1.0),
+            Value::Number(2.0),
+            Value::Number(3.0),
+            Value::Number(4.0),
+            Value::Number(5.0),
+        ];
+        let context = CmdletContext::with_input(input)
+            .with_parameter("Skip".to_string(), Value::Number(1.0))
+            .with_parameter("Last".to_string(), Value::Number(2.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+        assert_eq!(result, vec![Value::Number(4.0), Value::Number(5.0)]);
+    }
+
+    #[test]
+    fn test_select_object_negative_skip_errors() {
+        let cmdlet = SelectObjectCmdlet;
+        let input = vec![Value::Number(1.0), Value::Number(2.0)];
+        let context = CmdletContext::with_input(input)
+            .with_parameter("Skip".to_string(), Value::Number(-1.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator);
+        assert!(result.is_err());
+        let msg = result.err().unwrap().to_string().to_ascii_lowercase();
+        assert!(msg.contains("skip") && msg.contains("non-negative"));
+    }
+
+    #[test]
+    fn test_select_object_fractional_first_errors() {
+        let cmdlet = SelectObjectCmdlet;
+        let input = vec![Value::Number(1.0), Value::Number(2.0)];
+        let context = CmdletContext::with_input(input)
+            .with_parameter("First".to_string(), Value::Number(1.5));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator);
+        assert!(result.is_err());
+        let msg = result.err().unwrap().to_string().to_ascii_lowercase();
+        assert!(msg.contains("first") && msg.contains("non-negative"));
     }
 }
