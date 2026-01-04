@@ -623,3 +623,57 @@ fn test_week16_get_content_with_select_object_skip_first() {
         panic!("Expected array result");
     }
 }
+
+// Week 16: Set-Content - Integration Tests
+
+#[test]
+fn test_week16_set_content_writes_string_value() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("out.txt");
+    let path_str = file_path.to_string_lossy().replace('\\', "/");
+
+    let code = format!(
+        "Set-Content -Path '{}' -Value 'Hello'\nGet-Content '{}'",
+        path_str, path_str
+    );
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    match result {
+        Value::Array(items) => {
+            assert_eq!(items, vec![Value::String("Hello".to_string())]);
+        }
+        Value::String(s) => {
+            assert_eq!(s, "Hello".to_string());
+        }
+        other => panic!(
+            "Expected string or array result from Get-Content, got {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn test_week16_set_content_writes_pipeline_values() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("out.txt");
+    let path_str = file_path.to_string_lossy().replace('\\', "/");
+
+    let code = format!(
+        "@('a','b','c') | Set-Content -Path '{}'\nGet-Content '{}'",
+        path_str, path_str
+    );
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(
+            items,
+            vec![
+                Value::String("a".to_string()),
+                Value::String("b".to_string()),
+                Value::String("c".to_string())
+            ]
+        );
+    } else {
+        panic!("Expected array result from Get-Content, got {:?}", result);
+    }
+}
