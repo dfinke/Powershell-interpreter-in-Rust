@@ -69,9 +69,7 @@ fn wildcard_match_case_insensitive(pattern: &str, text: &str) -> bool {
     let mut match_ti: usize = 0;
 
     while ti < t.len() {
-        if pi < p.len()
-            && (p[pi] == b'?' || p[pi].eq_ignore_ascii_case(&t[ti]))
-        {
+        if pi < p.len() && (p[pi] == b'?' || p[pi].eq_ignore_ascii_case(&t[ti])) {
             pi += 1;
             ti += 1;
         } else if pi < p.len() && p[pi] == b'*' {
