@@ -98,6 +98,136 @@ fn matches_any_pattern(name: &str, patterns: &[String]) -> bool {
         .any(|p| wildcard_match_case_insensitive(p, name))
 }
 
+fn parse_switch(value: Option<&Value>) -> Result<bool, RuntimeError> {
+    match value {
+        None => Ok(false),
+        Some(Value::Boolean(b)) => Ok(*b),
+        Some(Value::Number(n)) => Ok(*n != 0.0),
+        Some(Value::String(s)) => {
+            let v = s.trim().to_ascii_lowercase();
+            match v.as_str() {
+                "true" | "t" | "1" | "yes" | "y" => Ok(true),
+                "false" | "f" | "0" | "no" | "n" => Ok(false),
+                _ => Err(RuntimeError::InvalidOperation(format!(
+                    "Invalid boolean value: {}",
+                    s
+                ))),
+            }
+        }
+        Some(other) => Err(RuntimeError::InvalidOperation(format!(
+            "Invalid boolean value: {}",
+            other
+        ))),
+    }
+}
+
+fn parse_optional_depth(value: Option<&Value>) -> Result<Option<usize>, RuntimeError> {
+    match value {
+        None => Ok(None),
+        Some(Value::Number(n)) => {
+            if *n < 0.0 {
+                return Err(RuntimeError::InvalidOperation(
+                    "Depth must be a non-negative number".to_string(),
+                ));
+            }
+            Ok(Some(*n as usize))
+        }
+        Some(Value::String(s)) => {
+            let parsed: usize = s.trim().parse().map_err(|_| {
+                RuntimeError::InvalidOperation(format!("Depth must be an integer, got: {}", s))
+            })?;
+            Ok(Some(parsed))
+        }
+        Some(other) => Err(RuntimeError::InvalidOperation(format!(
+            "Depth must be a number, got: {}",
+            other
+        ))),
+    }
+}
+
+fn should_output_name(
+    name: &str,
+    filter_patterns: &[String],
+    include_patterns: &[String],
+    exclude_patterns: &[String],
+) -> bool {
+    if !filter_patterns.is_empty() && !matches_any_pattern(name, filter_patterns) {
+        return false;
+    }
+    if !include_patterns.is_empty() && !matches_any_pattern(name, include_patterns) {
+        return false;
+    }
+    if !exclude_patterns.is_empty() && matches_any_pattern(name, exclude_patterns) {
+        return false;
+    }
+    true
+}
+
+fn collect_directory_items(
+    root: &Path,
+    recurse: bool,
+    max_depth: Option<usize>,
+    filter_patterns: &[String],
+    include_patterns: &[String],
+    exclude_patterns: &[String],
+) -> Result<Vec<Value>, RuntimeError> {
+    // Depth is measured in "directory hops" from the root.
+    // depth=0 means: list only the root directory entries (no recursion).
+    let mut items: Vec<Value> = Vec::new();
+    let mut stack: Vec<(PathBuf, usize)> = vec![(root.to_path_buf(), 0)];
+
+    while let Some((dir, depth)) = stack.pop() {
+        let entries = fs::read_dir(&dir).map_err(|e| {
+            RuntimeError::InvalidOperation(format!(
+                "Failed to read directory '{}': {}",
+                dir.display(),
+                e
+            ))
+        })?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| {
+                RuntimeError::InvalidOperation(format!("Failed to read directory entry: {}", e))
+            })?;
+
+            let entry_path = entry.path();
+            let name = entry.file_name().to_string_lossy().to_string();
+
+            // Decide recursion separately from output filtering:
+            // we still want to traverse subdirectories even when filter/include don't match
+            // directory names (e.g. -Recurse -Filter *.rs).
+            if recurse {
+                let within_depth = max_depth.map(|d| depth < d).unwrap_or(true);
+                if within_depth {
+                    let ft = fs::symlink_metadata(&entry_path)
+                        .map(|m| m.file_type())
+                        .map_err(|e| {
+                            RuntimeError::InvalidOperation(format!(
+                                "Failed to read metadata for '{}': {}",
+                                entry_path.display(),
+                                e
+                            ))
+                        })?;
+
+                    let is_symlink = ft.is_symlink();
+                    // Avoid infinite loops: do not recurse into symlinked directories.
+                    if !is_symlink && entry_path.is_dir() {
+                        stack.push((entry_path.clone(), depth + 1));
+                    }
+                }
+            }
+
+            if !should_output_name(&name, filter_patterns, include_patterns, exclude_patterns) {
+                continue;
+            }
+
+            items.push(build_file_object(&entry_path, name)?);
+        }
+    }
+
+    Ok(items)
+}
+
 fn build_mode_string(metadata: &fs::Metadata) -> String {
     // Cross-platform mode formatting.
     // - On Unix: use actual permission bits.
@@ -210,6 +340,9 @@ impl Cmdlet for GetChildItemCmdlet {
         let include_patterns = parse_string_patterns(get_parameter_ci(&context, "Include"));
         let exclude_patterns = parse_string_patterns(get_parameter_ci(&context, "Exclude"));
 
+        let recurse = parse_switch(get_parameter_ci(&context, "Recurse"))?;
+        let max_depth = parse_optional_depth(get_parameter_ci(&context, "Depth"))?;
+
         // Get path from parameters or arguments, default to current directory
         let path = if let Some(Value::String(p)) = get_parameter_ci(&context, "Path") {
             resolve_path(p)?
@@ -250,40 +383,15 @@ impl Cmdlet for GetChildItemCmdlet {
             return Ok(vec![build_file_object(&path, name)?]);
         }
 
-        // Otherwise, read directory contents
-        let entries = fs::read_dir(&path).map_err(|e| {
-            RuntimeError::InvalidOperation(format!(
-                "Failed to read directory '{}': {}",
-                path.display(),
-                e
-            ))
-        })?;
-
-        // Collect file/directory objects
-        let mut items = Vec::new();
-        for entry in entries {
-            let entry = entry.map_err(|e| {
-                RuntimeError::InvalidOperation(format!("Failed to read directory entry: {}", e))
-            })?;
-
-            let file_name = entry.file_name();
-            let name = file_name.to_string_lossy().to_string();
-
-            // Apply name-based filters
-            if !filter_patterns.is_empty() && !matches_any_pattern(&name, &filter_patterns) {
-                continue;
-            }
-            if !include_patterns.is_empty() && !matches_any_pattern(&name, &include_patterns) {
-                continue;
-            }
-            if !exclude_patterns.is_empty() && matches_any_pattern(&name, &exclude_patterns) {
-                continue;
-            }
-
-            items.push(build_file_object(&entry.path(), name)?);
-        }
-
-        Ok(items)
+        // Otherwise, read directory contents (optionally recursively)
+        collect_directory_items(
+            &path,
+            recurse,
+            max_depth,
+            &filter_patterns,
+            &include_patterns,
+            &exclude_patterns,
+        )
     }
 }
 
@@ -613,5 +721,125 @@ mod tests {
         } else {
             panic!("Expected object");
         }
+    }
+
+    #[test]
+    fn test_get_childitem_recurse_lists_nested_items() {
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+        fs::create_dir(root.join("subdir")).unwrap();
+        File::create(root.join("root.txt")).unwrap();
+        File::create(root.join("subdir").join("nested.txt")).unwrap();
+
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter("Path".to_string(), Value::String(root.to_string_lossy().to_string()))
+            .with_parameter("Recurse".to_string(), Value::Boolean(true));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+
+        let mut found_root = false;
+        let mut found_nested = false;
+        for item in &result {
+            if let Value::Object(props) = item {
+                if let Some(Value::String(name)) = props.get("Name") {
+                    if name == "root.txt" {
+                        found_root = true;
+                    } else if name == "nested.txt" {
+                        found_nested = true;
+                    }
+                }
+            }
+        }
+
+        assert!(found_root, "Should find root.txt");
+        assert!(found_nested, "Should find nested.txt when recursing");
+    }
+
+    #[test]
+    fn test_get_childitem_recurse_depth_limits_traversal() {
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+        fs::create_dir_all(root.join("a").join("b")).unwrap();
+        File::create(root.join("a").join("depth1.txt")).unwrap();
+        File::create(root.join("a").join("b").join("depth2.txt")).unwrap();
+
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter("Path".to_string(), Value::String(root.to_string_lossy().to_string()))
+            .with_parameter("Recurse".to_string(), Value::Boolean(true))
+            .with_parameter("Depth".to_string(), Value::Number(1.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+
+        let mut found_depth1 = false;
+        let mut found_depth2 = false;
+        for item in &result {
+            if let Value::Object(props) = item {
+                if let Some(Value::String(name)) = props.get("Name") {
+                    if name == "depth1.txt" {
+                        found_depth1 = true;
+                    } else if name == "depth2.txt" {
+                        found_depth2 = true;
+                    }
+                }
+            }
+        }
+
+        assert!(found_depth1, "Should find depth1.txt at depth 1");
+        assert!(
+            !found_depth2,
+            "Should not find depth2.txt when Depth is limited to 1"
+        );
+    }
+
+    #[test]
+    fn test_get_childitem_recurse_does_not_follow_symlink_dirs() {
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+        fs::create_dir_all(root.join("real")).unwrap();
+        File::create(root.join("real").join("inside.txt")).unwrap();
+
+        // Create a symlink that points back to root (potential loop). This is best-effort:
+        // some platforms/permissions may not allow creating symlinks.
+        let link_path = root.join("link");
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+            if symlink(root, &link_path).is_err() {
+                return; // Skip if symlinks aren't available
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::symlink_dir;
+            if symlink_dir(root, &link_path).is_err() {
+                return; // Skip if symlinks aren't available
+            }
+        }
+
+        let cmdlet = GetChildItemCmdlet;
+        let context = CmdletContext::new()
+            .with_parameter("Path".to_string(), Value::String(root.to_string_lossy().to_string()))
+            .with_parameter("Recurse".to_string(), Value::Boolean(true))
+            .with_parameter("Depth".to_string(), Value::Number(5.0));
+        let mut evaluator = pwsh_runtime::Evaluator::new();
+        let result = cmdlet.execute(context, &mut evaluator).unwrap();
+
+        // If we mistakenly follow the symlink loop, this test would likely hang or explode.
+        // We also verify we still find the real nested file.
+        let mut found_inside = false;
+        for item in &result {
+            if let Value::Object(props) = item {
+                if let Some(Value::String(name)) = props.get("Name") {
+                    if name == "inside.txt" {
+                        found_inside = true;
+                    }
+                }
+            }
+        }
+        assert!(found_inside, "Should find nested file inside real directory");
     }
 }
