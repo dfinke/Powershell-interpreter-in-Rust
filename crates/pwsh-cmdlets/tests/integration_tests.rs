@@ -2,6 +2,8 @@
 use pwsh_lexer::Lexer;
 use pwsh_parser::Parser;
 use pwsh_runtime::{Evaluator, Value};
+use std::fs;
+use tempfile::TempDir;
 
 /// Helper function to evaluate PowerShell code with cmdlets
 fn eval_with_cmdlets(input: &str) -> Result<Value, pwsh_runtime::RuntimeError> {
@@ -378,20 +380,21 @@ fn test_week15_get_childitem_basic() {
     // Test that Get-ChildItem returns an array of file objects
     let result = eval_with_cmdlets("Get-ChildItem").unwrap();
 
-    // When a cmdlet returns an array and there's no pipeline,
-    // the evaluator returns the last element of the array
-    // So we need to check if it's an Object with Name property
-    if let Value::Object(props) = result {
-        assert!(
-            props.contains_key("Name") || props.contains_key("name"),
-            "File object should have a Name property. Props: {:?}",
-            props
-        );
+    if let Value::Array(items) = result {
+        assert!(!items.is_empty(), "Expected at least one item");
+        for item in items {
+            if let Value::Object(props) = item {
+                assert!(
+                    props.contains_key("Name") || props.contains_key("name"),
+                    "File object should have a Name property. Props: {:?}",
+                    props
+                );
+            } else {
+                panic!("Expected object item, got {:?}", item);
+            }
+        }
     } else {
-        panic!(
-            "Expected object result from Get-ChildItem, got {:?}",
-            result
-        );
+        panic!("Expected array result from Get-ChildItem, got {:?}", result);
     }
 }
 
@@ -419,5 +422,80 @@ fn test_week15_get_childitem_with_select() {
         }
     } else {
         panic!("Expected array result");
+    }
+}
+
+#[test]
+fn test_week15_get_childitem_path_parameter() {
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path();
+
+    fs::write(temp_path.join("a.txt"), "a").unwrap();
+    fs::write(temp_path.join("b.rs"), "b").unwrap();
+
+    // NOTE: The lexer treats backslashes as escape sequences, so normalize to forward slashes.
+    let path_str = temp_path.to_string_lossy().replace('\\', "/");
+    let code = format!("Get-ChildItem -Path '{}' | Select-Object Name", path_str);
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 2);
+        for item in items {
+            if let Value::Object(props) = item {
+                assert_eq!(props.len(), 1);
+                assert!(props.contains_key("Name") || props.contains_key("name"));
+            } else {
+                panic!("Expected object");
+            }
+        }
+    } else {
+        panic!("Expected array result");
+    }
+}
+
+#[test]
+fn test_week15_get_childitem_filter_include_exclude_integration() {
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path();
+
+    fs::write(temp_path.join("file1.txt"), "one").unwrap();
+    fs::write(temp_path.join("file2.rs"), "two").unwrap();
+    fs::write(temp_path.join("README.md"), "readme").unwrap();
+
+    // Normalize to forward slashes due to lexer escape handling.
+    let path_str = temp_path.to_string_lossy().replace('\\', "/");
+
+    // -Filter
+    let code = format!(
+        "Get-ChildItem -Path '{}' -Filter '*.rs' | Select-Object Name",
+        path_str
+    );
+    let result = eval_with_cmdlets(&code).unwrap();
+    let items: Vec<Value> = match result {
+        Value::Array(items) => items,
+        other => vec![other],
+    };
+    assert_eq!(items.len(), 1);
+    if let Value::Object(props) = &items[0] {
+        assert_eq!(props.get("Name"), Some(&Value::String("file2.rs".to_string())));
+    } else {
+        panic!("Expected object");
+    }
+
+    // -Include/-Exclude using @() array literal
+    let code = format!(
+        "Get-ChildItem -Path '{}' -Include @('*.md','*.txt') -Exclude 'README*' | Select-Object Name",
+        path_str
+    );
+    let result = eval_with_cmdlets(&code).unwrap();
+    let items: Vec<Value> = match result {
+        Value::Array(items) => items,
+        other => vec![other],
+    };
+    assert_eq!(items.len(), 1);
+    if let Value::Object(props) = &items[0] {
+        assert_eq!(props.get("Name"), Some(&Value::String("file1.txt".to_string())));
+    } else {
+        panic!("Expected object");
     }
 }
