@@ -34,3 +34,21 @@ This file tracks the most recent features implemented in this repo (what changed
 **Files changed**:
 - `crates/pwsh-cmdlets/src/select_object.rs` — added `-Skip` + validated integer parsing.
 - `crates/pwsh-cmdlets/tests/integration_tests.rs` — added pipeline coverage (`Get-Content | Select-Object -Skip -First`).
+
+### Week 16 — Set-Content — Chunk 4 (Write file contents)
+
+**Implemented**: `Set-Content -Path <path> -Value <value>` with pipeline support.
+
+**Behavior**:
+- Overwrites existing files (and creates new files).
+- Accepts content via `-Value`, pipeline input, or a second positional argument.
+- Arrays write one element per line.
+
+**Files changed**:
+- `crates/pwsh-cmdlets/src/set_content.rs` — new cmdlet + unit tests.
+- `crates/pwsh-cmdlets/src/lib.rs` — register `Set-Content`.
+- `crates/pwsh-cmdlets/tests/integration_tests.rs` — end-to-end tests.
+
+**Verification**:
+- `cargo test` (workspace)
+- `cargo clippy --all-targets --all-features -- -D warnings` (workspace)
