@@ -733,7 +733,10 @@ mod tests {
 
         let cmdlet = GetChildItemCmdlet;
         let context = CmdletContext::new()
-            .with_parameter("Path".to_string(), Value::String(root.to_string_lossy().to_string()))
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(root.to_string_lossy().to_string()),
+            )
             .with_parameter("Recurse".to_string(), Value::Boolean(true));
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
@@ -766,7 +769,10 @@ mod tests {
 
         let cmdlet = GetChildItemCmdlet;
         let context = CmdletContext::new()
-            .with_parameter("Path".to_string(), Value::String(root.to_string_lossy().to_string()))
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(root.to_string_lossy().to_string()),
+            )
             .with_parameter("Recurse".to_string(), Value::Boolean(true))
             .with_parameter("Depth".to_string(), Value::Number(1.0));
         let mut evaluator = pwsh_runtime::Evaluator::new();
@@ -822,7 +828,10 @@ mod tests {
 
         let cmdlet = GetChildItemCmdlet;
         let context = CmdletContext::new()
-            .with_parameter("Path".to_string(), Value::String(root.to_string_lossy().to_string()))
+            .with_parameter(
+                "Path".to_string(),
+                Value::String(root.to_string_lossy().to_string()),
+            )
             .with_parameter("Recurse".to_string(), Value::Boolean(true))
             .with_parameter("Depth".to_string(), Value::Number(5.0));
         let mut evaluator = pwsh_runtime::Evaluator::new();
@@ -840,6 +849,9 @@ mod tests {
                 }
             }
         }
-        assert!(found_inside, "Should find nested file inside real directory");
+        assert!(
+            found_inside,
+            "Should find nested file inside real directory"
+        );
     }
 }
