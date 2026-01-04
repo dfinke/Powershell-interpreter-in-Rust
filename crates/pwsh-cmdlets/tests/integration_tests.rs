@@ -592,7 +592,10 @@ fn test_week16_get_content_with_encoding_unicode_utf16le() {
     if let Value::Array(items) = result {
         assert_eq!(
             items,
-            vec![Value::String("one".to_string()), Value::String("two".to_string())]
+            vec![
+                Value::String("one".to_string()),
+                Value::String("two".to_string())
+            ]
         );
     } else {
         panic!("Expected array result from Get-Content, got {:?}", result);
