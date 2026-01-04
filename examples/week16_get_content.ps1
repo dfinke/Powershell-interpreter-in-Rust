@@ -3,7 +3,7 @@
 # Chunk 1: Basic File Reading
 
 Write-Output "=== Example 1: Read a file ==="
-Get-Content -Path "./README.md" | Selwect-Object Length
+Get-Content -Path "./README.md" | Select-Object Length
 
 Write-Output ""
 Write-Output "=== Example 2: Read a file (positional path) ==="
