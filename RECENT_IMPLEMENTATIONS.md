@@ -17,6 +17,13 @@ This file tracks the most recent features implemented in this repo (what changed
 
 **Verification**:
 - `cargo test` (workspace)
+- `cargo clippy --all-targets --all-features -- -D warnings` (workspace)
+
+### CI / Tooling — fix clippy warning in `Get-Content`
+
+**Fixed**: `clippy::explicit-counter-loop` in the `-TotalCount` code path by switching to `enumerate()`.
+
+**Why**: GitHub Actions runs `cargo clippy --all-targets --all-features -- -D warnings`, so this warning broke the build.
 
 ### Select-Object — add `-Skip` (PowerShell-aligned)
 
