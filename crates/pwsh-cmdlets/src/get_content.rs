@@ -168,10 +168,9 @@ fn read_lines_filtered(
 
     // Default / -TotalCount: collect (streaming) and optionally stop early
     let mut out = Vec::new();
-    let mut taken = 0usize;
     let max_take = total_count.unwrap_or(usize::MAX);
 
-    for line in reader.lines() {
+    for (taken, line) in reader.lines().enumerate() {
         let line = line.map_err(|e| {
             RuntimeError::InvalidOperation(format!(
                 "Failed to read file '{}': {}",
@@ -185,7 +184,6 @@ fn read_lines_filtered(
         }
 
         out.push(Value::String(line));
-        taken += 1;
     }
 
     Ok(out)
