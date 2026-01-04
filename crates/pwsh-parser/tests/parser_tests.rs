@@ -535,6 +535,33 @@ fn test_parse_cmdlet_with_named_param() {
 }
 
 #[test]
+fn test_parse_cmdlet_with_switch_param_implicit_true() {
+    use pwsh_lexer::Lexer;
+    use pwsh_parser::{Argument, Expression, Literal, Parser, Statement};
+
+    let mut lexer = Lexer::new("Get-ChildItem -Recurse");
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+
+    assert_eq!(program.statements.len(), 1);
+    match &program.statements[0] {
+        Statement::Expression(Expression::Call { name, arguments }) => {
+            assert_eq!(name, "Get-ChildItem");
+            assert_eq!(arguments.len(), 1);
+            match &arguments[0] {
+                Argument::Named { name, value } => {
+                    assert_eq!(name, "Recurse");
+                    assert_eq!(value, &Expression::Literal(Literal::Boolean(true)));
+                }
+                other => panic!("Expected named argument, got {:?}", other),
+            }
+        }
+        other => panic!("Expected call expression, got {:?}", other),
+    }
+}
+
+#[test]
 fn test_parse_complex_pipeline() {
     let program =
         parse_str("Get-Process | Where-Object { $_.CPU -gt 10 } | Select-Object Name, CPU")

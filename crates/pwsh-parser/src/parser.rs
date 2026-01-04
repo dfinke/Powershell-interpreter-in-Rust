@@ -510,8 +510,19 @@ impl Parser {
                     }
                 };
 
-                // Next token should be the value
-                let value = self.parse_primary()?;
+                // Support switch-style parameters like: -Recurse
+                // If no value follows (end of statement / pipeline / comma / etc), treat as $true.
+                let value = if self.is_at_end()
+                    || self.is_statement_terminator()
+                    || self.check(&Token::Comma)
+                    || self.check(&Token::Pipeline)
+                    || self.check(&Token::RightParen)
+                    || self.check(&Token::RightBrace)
+                {
+                    Expression::Literal(Literal::Boolean(true))
+                } else {
+                    self.parse_primary()?
+                };
                 arguments.push(Argument::Named { name, value });
 
                 // Skip optional comma
