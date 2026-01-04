@@ -12,6 +12,8 @@ path = "src/lib.rs"
 
 [dependencies]
 pwsh-runtime = { path = "../pwsh-runtime" }
+encoding_rs = "0.8"
+encoding_rs_io = "0.1"
 
 [dev-dependencies]
 pwsh-lexer = { path = "../pwsh-lexer" }
