@@ -520,6 +520,36 @@ impl Parser {
                     || self.check(&Token::RightBrace)
                 {
                     Expression::Literal(Literal::Boolean(true))
+                } else if let Some(Token::Identifier(id)) = self.peek() {
+                    // In PowerShell, bare words in argument position are strings.
+                    // This includes named parameter values like: Sort-Object -Property CPU
+                    // If the identifier is followed by a token that clearly ends the value,
+                    // treat it as a string literal rather than a cmdlet/function call.
+
+                    let next_idx = self.current + 1;
+                    let is_bare_word_value = if next_idx < self.tokens.len() {
+                        matches!(
+                            &self.tokens[next_idx].token,
+                            Token::Comma
+                                | Token::Minus
+                                | Token::Pipeline
+                                | Token::RightParen
+                                | Token::RightBrace
+                                | Token::Newline
+                                | Token::Semicolon
+                                | Token::Eof
+                        )
+                    } else {
+                        true
+                    };
+
+                    if is_bare_word_value {
+                        let identifier = id.clone();
+                        self.advance();
+                        Expression::Literal(Literal::String(identifier))
+                    } else {
+                        self.parse_primary()?
+                    }
                 } else {
                     self.parse_primary()?
                 };
