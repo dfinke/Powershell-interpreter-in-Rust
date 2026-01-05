@@ -677,3 +677,76 @@ fn test_week16_set_content_writes_pipeline_values() {
         panic!("Expected array result from Get-Content, got {:?}", result);
     }
 }
+
+// Week 16: Additional File Cmdlets - Integration Tests (Chunk 5)
+
+#[test]
+fn test_week16_test_path_true_false() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("exists.txt");
+    fs::write(&file_path, "hello").unwrap();
+
+    let exists_str = file_path.to_string_lossy().replace('\\', "/");
+    let missing_str = temp_dir
+        .path()
+        .join("missing.txt")
+        .to_string_lossy()
+        .replace('\\', "/");
+
+    let code = format!("Test-Path '{}'\nTest-Path '{}'", exists_str, missing_str);
+    let result = eval_with_cmdlets(&code).unwrap();
+
+    // The statement result is the last cmdlet output.
+    assert_eq!(result, Value::Boolean(false));
+}
+
+#[test]
+fn test_week16_new_item_creates_file_and_directory() {
+    let temp_dir = TempDir::new().unwrap();
+    let dir_path = temp_dir.path().join("d");
+    let file_path = temp_dir.path().join("f.txt");
+
+    let dir_str = dir_path.to_string_lossy().replace('\\', "/");
+    let file_str = file_path.to_string_lossy().replace('\\', "/");
+
+    let code = format!(
+        "New-Item -Path '{}' -Type 'Directory'\nNew-Item -Path '{}' -Type 'File'\nTest-Path '{}'",
+        dir_str, file_str, file_str
+    );
+    let result = eval_with_cmdlets(&code).unwrap();
+    assert_eq!(result, Value::Boolean(true));
+
+    assert!(dir_path.exists() && dir_path.is_dir());
+    assert!(file_path.exists() && file_path.is_file());
+}
+
+#[test]
+fn test_week16_remove_item_deletes_file() {
+    let temp_dir = TempDir::new().unwrap();
+    let file_path = temp_dir.path().join("todelete.txt");
+    fs::write(&file_path, "hello").unwrap();
+
+    let file_str = file_path.to_string_lossy().replace('\\', "/");
+
+    let code = format!("Remove-Item -Path '{}'\nTest-Path '{}'", file_str, file_str);
+    let result = eval_with_cmdlets(&code).unwrap();
+    assert_eq!(result, Value::Boolean(false));
+}
+
+#[test]
+fn test_week16_remove_item_recurse_deletes_directory_tree() {
+    let temp_dir = TempDir::new().unwrap();
+    let dir_path = temp_dir.path().join("tree");
+    let file_path = dir_path.join("sub").join("x.txt");
+    fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+    fs::write(&file_path, "x").unwrap();
+
+    let dir_str = dir_path.to_string_lossy().replace('\\', "/");
+
+    let code = format!(
+        "Remove-Item -Path '{}' -Recurse\nTest-Path '{}'",
+        dir_str, dir_str
+    );
+    let result = eval_with_cmdlets(&code).unwrap();
+    assert_eq!(result, Value::Boolean(false));
+}

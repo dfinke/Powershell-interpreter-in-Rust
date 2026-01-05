@@ -2,8 +2,11 @@ mod foreach_object;
 mod get_childitem;
 mod get_content;
 mod get_process;
+mod new_item;
+mod remove_item;
 mod select_object;
 mod set_content;
+mod test_path;
 mod where_object;
 /// PowerShell built-in cmdlets
 mod write_output;
@@ -13,8 +16,11 @@ pub use foreach_object::ForEachObjectCmdlet;
 pub use get_childitem::GetChildItemCmdlet;
 pub use get_content::GetContentCmdlet;
 pub use get_process::GetProcessCmdlet;
+pub use new_item::NewItemCmdlet;
+pub use remove_item::RemoveItemCmdlet;
 pub use select_object::SelectObjectCmdlet;
 pub use set_content::SetContentCmdlet;
+pub use test_path::TestPathCmdlet;
 pub use where_object::WhereObjectCmdlet;
 pub use write_output::WriteOutputCmdlet;
 
@@ -31,6 +37,9 @@ pub fn cmdlet_names() -> Vec<String> {
         "Get-ChildItem".to_string(),
         "Get-Content".to_string(),
         "Set-Content".to_string(),
+        "Test-Path".to_string(),
+        "New-Item".to_string(),
+        "Remove-Item".to_string(),
     ]
 }
 
@@ -44,4 +53,7 @@ pub fn register_all(registry: &mut pwsh_runtime::CmdletRegistry) {
     registry.register(Box::new(GetChildItemCmdlet));
     registry.register(Box::new(GetContentCmdlet));
     registry.register(Box::new(SetContentCmdlet));
+    registry.register(Box::new(TestPathCmdlet));
+    registry.register(Box::new(NewItemCmdlet));
+    registry.register(Box::new(RemoveItemCmdlet));
 }
