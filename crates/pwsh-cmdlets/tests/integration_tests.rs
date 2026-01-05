@@ -693,10 +693,7 @@ fn test_week16_test_path_true_false() {
         .to_string_lossy()
         .replace('\\', "/");
 
-    let code = format!(
-        "Test-Path '{}'\nTest-Path '{}'",
-        exists_str, missing_str
-    );
+    let code = format!("Test-Path '{}'\nTest-Path '{}'", exists_str, missing_str);
     let result = eval_with_cmdlets(&code).unwrap();
 
     // The statement result is the last cmdlet output.
@@ -731,10 +728,7 @@ fn test_week16_remove_item_deletes_file() {
 
     let file_str = file_path.to_string_lossy().replace('\\', "/");
 
-    let code = format!(
-        "Remove-Item -Path '{}'\nTest-Path '{}'",
-        file_str, file_str
-    );
+    let code = format!("Remove-Item -Path '{}'\nTest-Path '{}'", file_str, file_str);
     let result = eval_with_cmdlets(&code).unwrap();
     assert_eq!(result, Value::Boolean(false));
 }
