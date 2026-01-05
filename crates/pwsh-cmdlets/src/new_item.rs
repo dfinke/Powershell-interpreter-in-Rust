@@ -82,10 +82,7 @@ fn build_item_object(path: &Path, item_type: &str, is_dir: bool) -> Value {
                 .unwrap_or_else(|| path.to_string_lossy().to_string()),
         ),
     );
-    props.insert(
-        "ItemType".to_string(),
-        Value::String(item_type.to_string()),
-    );
+    props.insert("ItemType".to_string(), Value::String(item_type.to_string()));
     props.insert("Directory".to_string(), Value::Boolean(is_dir));
     Value::Object(props)
 }
@@ -194,11 +191,10 @@ mod tests {
         let file_path = temp_dir.path().join("a.txt");
 
         let cmdlet = NewItemCmdlet;
-        let context = CmdletContext::new()
-            .with_arguments(vec![
-                Value::String(file_path.to_string_lossy().to_string()),
-                Value::String("File".to_string()),
-            ]);
+        let context = CmdletContext::new().with_arguments(vec![
+            Value::String(file_path.to_string_lossy().to_string()),
+            Value::String("File".to_string()),
+        ]);
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let _ = cmdlet.execute(context, &mut evaluator).unwrap();
 
