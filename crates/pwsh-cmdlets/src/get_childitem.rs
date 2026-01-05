@@ -312,8 +312,16 @@ fn build_file_object(path: &Path, name: String) -> Result<Value, RuntimeError> {
         .unwrap_or(0.0);
     let mode = build_mode_string(&metadata);
 
-    let mut props = HashMap::with_capacity(5);
+    // Match PowerShell's common Extension behavior (e.g. ".txt").
+    let extension = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| format!(".{}", e))
+        .unwrap_or_else(String::new);
+
+    let mut props = HashMap::with_capacity(6);
     props.insert("Name".to_string(), Value::String(name));
+    props.insert("Extension".to_string(), Value::String(extension));
     props.insert("Length".to_string(), Value::Number(length));
     props.insert("LastWriteTime".to_string(), Value::Number(last_write_time));
     props.insert("Mode".to_string(), Value::String(mode));
