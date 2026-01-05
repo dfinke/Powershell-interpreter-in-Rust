@@ -99,9 +99,8 @@ mod tests {
         let file_path = temp_dir.path().join("missing.txt");
 
         let cmdlet = TestPathCmdlet;
-        let context = CmdletContext::new().with_arguments(vec![Value::String(
-            file_path.to_string_lossy().to_string(),
-        )]);
+        let context = CmdletContext::new()
+            .with_arguments(vec![Value::String(file_path.to_string_lossy().to_string())]);
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
         assert_eq!(result, vec![Value::Boolean(false)]);
