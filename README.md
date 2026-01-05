@@ -13,7 +13,8 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ Runtime evaluation engine
 - ✅ **Object-based pipeline execution (MILESTONE!)**
 - ✅ 5 core cmdlets (Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object)
-- ✅ Phase 4 started: **Get-ChildItem** (filesystem listing) with `-Path`, `-Filter`, `-Include`, `-Exclude`, `-Recurse`, and `-Depth`
+- ✅ Phase 4 started: File system cmdlets (Get-ChildItem, Get-Content, Set-Content, Test-Path, New-Item, Remove-Item)
+- ✅ Week 17 started: Object manipulation cmdlets **Sort-Object** and **Group-Object**
 - ✅ **Get-Process with process objects**
 - ✅ **Where-Object with script block filtering**
 - ✅ **Select-Object with property projection**
@@ -41,6 +42,11 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 ```bash
 cargo run -p pwsh-cli
 ```
+
+### Week 17 examples
+
+- `examples/week17_sort_object.ps1`
+- `examples/week17_group_object.ps1`
 
 ## 📋 Overview
 
