@@ -317,7 +317,7 @@ fn build_file_object(path: &Path, name: String) -> Result<Value, RuntimeError> {
         .extension()
         .and_then(|e| e.to_str())
         .map(|e| format!(".{}", e))
-        .unwrap_or_else(String::new);
+        .unwrap_or_default();
 
     let mut props = HashMap::with_capacity(6);
     props.insert("Name".to_string(), Value::String(name));
