@@ -4,6 +4,46 @@ This file tracks the most recent features implemented in this repo (what changed
 
 ## 2026-01-04
 
+### Week 17 — Sort-Object & Group-Object (Object Manipulation)
+
+**Implemented (PowerShell-aligned)**: `Sort-Object` and `Group-Object` with pipeline support, property-based operation, and deterministic results.
+
+**Sort-Object behavior**:
+- Sorts pipeline input (or positional args when not in a pipeline)
+- `-Property` supports a single property or an array of properties
+- `-Descending` supported (expects explicit boolean in this interpreter)
+- Comparison: nulls first, numeric compare when possible, else case-insensitive string compare
+
+**Group-Object behavior**:
+- Groups by value (default) or by `-Property` (single or array)
+- Supports positional property list *when used in a pipeline* (e.g. `$items | Group-Object Name, Extension`)
+- `-NoElement` omits the `Group` array
+- `-AsHashTable` returns a single hashtable-like object mapping group name → group info
+
+**Parser compatibility fix**:
+- Named parameter values now support **bare words** (PowerShell style) when syntactically unambiguous.
+	- Example: `Sort-Object -Property CPU` treats `CPU` as a string literal instead of attempting to call a function/cmdlet named `CPU`.
+
+**Supporting improvements**:
+- `Get-ChildItem` now includes an `Extension` property (e.g. `.rs`) to support grouping examples.
+- REPL tab-completion list includes `Sort-Object` and `Group-Object` via `pwsh_cmdlets::cmdlet_names()`.
+- Added Week 17 example scripts.
+
+**Files changed**:
+- `crates/pwsh-cmdlets/src/sort_object.rs` — new cmdlet + unit tests
+- `crates/pwsh-cmdlets/src/group_object.rs` — new cmdlet + unit tests
+- `crates/pwsh-cmdlets/src/lib.rs` — cmdlet registration + completion names
+- `crates/pwsh-cmdlets/src/get_childitem.rs` — add `Extension` property (plus minor clippy cleanup)
+- `crates/pwsh-cmdlets/tests/integration_tests.rs` — end-to-end Week 17 coverage
+- `crates/pwsh-parser/src/parser.rs` — bare-word named parameter value parsing
+- `examples/week17_sort_object.ps1`, `examples/week17_group_object.ps1` — new example scripts
+- `README.md` — docs update for Week 17
+
+**Verification**:
+- `cargo test` (workspace)
+- `cargo fmt --all -- --check` (workspace)
+- `cargo clippy --all-targets --all-features -- -D warnings` (workspace)
+
 ### Week 16 — Get-Content — Chunk 3 (Filtering Parameters)
 
 **Implemented (PowerShell-aligned)**: `Get-Content -TotalCount`, `-Tail`.

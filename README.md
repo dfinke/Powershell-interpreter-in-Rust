@@ -14,7 +14,7 @@ A modern PowerShell interpreter implementation written in Rust, featuring the si
 - ✅ **Object-based pipeline execution (MILESTONE!)**
 - ✅ 5 core cmdlets (Write-Output, Get-Process, Where-Object, Select-Object, ForEach-Object)
 - ✅ Phase 4 started: File system cmdlets (Get-ChildItem, Get-Content, Set-Content, Test-Path, New-Item, Remove-Item)
-- ✅ Week 17 started: Object manipulation cmdlets **Sort-Object** and **Group-Object**
+- ✅ Week 17 complete: Object manipulation cmdlets **Sort-Object** and **Group-Object**
 - ✅ **Get-Process with process objects**
 - ✅ **Where-Object with script block filtering**
 - ✅ **Select-Object with property projection**
@@ -245,6 +245,8 @@ See [ROADMAP.md](ROADMAP.md) for detailed week-by-week plan.
 ### Prerequisites
 
 - Rust 1.64 or later (workspace inheritance support required)
+- Recommended: install toolchain components used by CI
+    - `rustup component add clippy rustfmt`
 - Git
 - Code editor (VS Code + rust-analyzer recommended)
 
