@@ -80,9 +80,7 @@ fn cmp_values(a: &Value, b: &Value) -> std::cmp::Ordering {
     let an = a.to_number();
     let bn = b.to_number();
     if let (Some(an), Some(bn)) = (an, bn) {
-        return an
-            .partial_cmp(&bn)
-            .unwrap_or(std::cmp::Ordering::Equal);
+        return an.partial_cmp(&bn).unwrap_or(std::cmp::Ordering::Equal);
     }
 
     // Fall back to case-insensitive string comparison (PowerShell default).
@@ -179,7 +177,10 @@ mod tests {
         let context = CmdletContext::with_input(input);
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
-        assert_eq!(result, vec![Value::Number(1.0), Value::Number(2.0), Value::Number(3.0)]);
+        assert_eq!(
+            result,
+            vec![Value::Number(1.0), Value::Number(2.0), Value::Number(3.0)]
+        );
     }
 
     #[test]
@@ -198,7 +199,7 @@ mod tests {
             vec![
                 Value::String("A".to_string()),
                 Value::String("b".to_string()),
-                Value::String("c".to_string())
+                Value::String("c".to_string()),
             ]
         );
     }
@@ -236,7 +237,10 @@ mod tests {
             .with_parameter("Descending".to_string(), Value::Boolean(true));
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
-        assert_eq!(result, vec![Value::Number(3.0), Value::Number(2.0), Value::Number(1.0)]);
+        assert_eq!(
+            result,
+            vec![Value::Number(3.0), Value::Number(2.0), Value::Number(1.0)]
+        );
     }
 
     #[test]
@@ -255,11 +259,18 @@ mod tests {
         o3.insert("Name".to_string(), Value::String("c".to_string()));
         o3.insert("CPU".to_string(), Value::Number(0.0));
 
-        let context = CmdletContext::with_input(vec![Value::Object(o1), Value::Object(o2), Value::Object(o3)])
-            .with_parameter(
-                "Property".to_string(),
-                Value::Array(vec![Value::String("CPU".to_string()), Value::String("Name".to_string())]),
-            );
+        let context = CmdletContext::with_input(vec![
+            Value::Object(o1),
+            Value::Object(o2),
+            Value::Object(o3),
+        ])
+        .with_parameter(
+            "Property".to_string(),
+            Value::Array(vec![
+                Value::String("CPU".to_string()),
+                Value::String("Name".to_string()),
+            ]),
+        );
 
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
@@ -270,6 +281,9 @@ mod tests {
             .filter_map(|v| v.get_property("Name"))
             .map(|v| v.to_string())
             .collect();
-        assert_eq!(names, vec!["c".to_string(), "a".to_string(), "b".to_string()]);
+        assert_eq!(
+            names,
+            vec!["c".to_string(), "a".to_string(), "b".to_string()]
+        );
     }
 }
