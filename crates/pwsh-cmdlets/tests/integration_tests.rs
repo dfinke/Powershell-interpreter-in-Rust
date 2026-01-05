@@ -750,3 +750,76 @@ fn test_week16_remove_item_recurse_deletes_directory_tree() {
     let result = eval_with_cmdlets(&code).unwrap();
     assert_eq!(result, Value::Boolean(false));
 }
+
+// Week 17: Sort-Object & Group-Object - Integration Tests
+
+#[test]
+fn test_week17_sort_object_numbers() {
+    let result = eval_with_cmdlets("@(3,1,4,1,5,9) | Sort-Object").unwrap();
+
+    if let Value::Array(items) = result {
+        let nums: Vec<f64> = items
+            .iter()
+            .filter_map(|v| v.to_number())
+            .collect();
+        assert_eq!(nums, vec![1.0, 1.0, 3.0, 4.0, 5.0, 9.0]);
+    } else {
+        panic!("Expected array result from Sort-Object, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_week17_sort_object_by_property_descending() {
+    let code = r#"
+        $procs = @(
+            @{Name="a"; CPU=1}
+            @{Name="b"; CPU=3}
+            @{Name="c"; CPU=2}
+        )
+        $procs | Sort-Object -Property CPU -Descending true | Select-Object Name
+    "#;
+
+    let result = eval_with_cmdlets(code).unwrap();
+    if let Value::Array(items) = result {
+        let names: Vec<String> = items
+            .iter()
+            .filter_map(|v| v.get_property("Name"))
+            .map(|v| v.to_string())
+            .collect();
+        assert_eq!(names, vec!["b".to_string(), "c".to_string(), "a".to_string()]);
+    } else {
+        panic!("Expected array result, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_week17_group_object_numbers() {
+    let result = eval_with_cmdlets("@(1,2,2,3,3,3) | Group-Object").unwrap();
+
+    if let Value::Array(items) = result {
+        assert_eq!(items.len(), 3);
+        let names: Vec<String> = items
+            .iter()
+            .filter_map(|v| v.get_property("Name"))
+            .map(|v| v.to_string())
+            .collect();
+        assert_eq!(names, vec!["1".to_string(), "2".to_string(), "3".to_string()]);
+    } else {
+        panic!("Expected array result from Group-Object, got {:?}", result);
+    }
+}
+
+#[test]
+fn test_week17_group_object_as_hash_table() {
+    let result = eval_with_cmdlets("@('a','b','b') | Group-Object -AsHashTable true").unwrap();
+
+    if let Value::Object(map) = result {
+        assert!(map.contains_key("a"));
+        assert!(map.contains_key("b"));
+
+        let b_group = map.get("b").unwrap();
+        assert_eq!(b_group.get_property("Count"), Some(Value::Number(2.0)));
+    } else {
+        panic!("Expected object hashtable result, got {:?}", result);
+    }
+}
