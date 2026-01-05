@@ -758,10 +758,7 @@ fn test_week17_sort_object_numbers() {
     let result = eval_with_cmdlets("@(3,1,4,1,5,9) | Sort-Object").unwrap();
 
     if let Value::Array(items) = result {
-        let nums: Vec<f64> = items
-            .iter()
-            .filter_map(|v| v.to_number())
-            .collect();
+        let nums: Vec<f64> = items.iter().filter_map(|v| v.to_number()).collect();
         assert_eq!(nums, vec![1.0, 1.0, 3.0, 4.0, 5.0, 9.0]);
     } else {
         panic!("Expected array result from Sort-Object, got {:?}", result);
@@ -786,7 +783,10 @@ fn test_week17_sort_object_by_property_descending() {
             .filter_map(|v| v.get_property("Name"))
             .map(|v| v.to_string())
             .collect();
-        assert_eq!(names, vec!["b".to_string(), "c".to_string(), "a".to_string()]);
+        assert_eq!(
+            names,
+            vec!["b".to_string(), "c".to_string(), "a".to_string()]
+        );
     } else {
         panic!("Expected array result, got {:?}", result);
     }
@@ -803,7 +803,10 @@ fn test_week17_group_object_numbers() {
             .filter_map(|v| v.get_property("Name"))
             .map(|v| v.to_string())
             .collect();
-        assert_eq!(names, vec!["1".to_string(), "2".to_string(), "3".to_string()]);
+        assert_eq!(
+            names,
+            vec!["1".to_string(), "2".to_string(), "3".to_string()]
+        );
     } else {
         panic!("Expected array result from Group-Object, got {:?}", result);
     }
