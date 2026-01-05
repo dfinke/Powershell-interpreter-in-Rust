@@ -183,7 +183,10 @@ mod tests {
             .filter_map(|v| v.get_property("Name"))
             .map(|v| v.to_string())
             .collect();
-        assert_eq!(names, vec!["1".to_string(), "2".to_string(), "3".to_string()]);
+        assert_eq!(
+            names,
+            vec!["1".to_string(), "2".to_string(), "3".to_string()]
+        );
 
         let counts: Vec<f64> = result
             .iter()
@@ -233,29 +236,22 @@ mod tests {
         let cmdlet = GroupObjectCmdlet;
 
         let a = Value::Object(HashMap::from([
-            (
-                "Extension".to_string(),
-                Value::String(".rs".to_string()),
-            ),
+            ("Extension".to_string(), Value::String(".rs".to_string())),
             ("Name".to_string(), Value::String("a".to_string())),
         ]));
         let b = Value::Object(HashMap::from([
-            (
-                "Extension".to_string(),
-                Value::String(".rs".to_string()),
-            ),
+            ("Extension".to_string(), Value::String(".rs".to_string())),
             ("Name".to_string(), Value::String("b".to_string())),
         ]));
         let c = Value::Object(HashMap::from([
-            (
-                "Extension".to_string(),
-                Value::String(".txt".to_string()),
-            ),
+            ("Extension".to_string(), Value::String(".txt".to_string())),
             ("Name".to_string(), Value::String("c".to_string())),
         ]));
 
-        let context = CmdletContext::with_input(vec![a, b, c])
-            .with_parameter("Property".to_string(), Value::String("Extension".to_string()));
+        let context = CmdletContext::with_input(vec![a, b, c]).with_parameter(
+            "Property".to_string(),
+            Value::String("Extension".to_string()),
+        );
 
         let mut evaluator = pwsh_runtime::Evaluator::new();
         let result = cmdlet.execute(context, &mut evaluator).unwrap();
@@ -296,7 +292,10 @@ mod tests {
 
         let context = CmdletContext::with_input(vec![x1, x2, y]).with_parameter(
             "Property".to_string(),
-            Value::Array(vec![Value::String("A".to_string()), Value::String("B".to_string())]),
+            Value::Array(vec![
+                Value::String("A".to_string()),
+                Value::String("B".to_string()),
+            ]),
         );
 
         let mut evaluator = pwsh_runtime::Evaluator::new();
